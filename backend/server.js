@@ -39,7 +39,7 @@ async function getStudentFields(whatsappNumber) {
       return {
         firstName: student["First Name"],
         lastName: student["Last Name"],
-        examCenter: student["Preferred Exam Center"],
+        examCenter: student["final_exam_center"],
         nic: student["NIC"],
         studentId: student._id ? student._id.toString() : undefined
       };

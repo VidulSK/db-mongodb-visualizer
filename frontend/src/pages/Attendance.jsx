@@ -46,14 +46,16 @@ export default function Attendance({ students = [] }) {
     const dataMap = {};
 
     students.forEach(student => {
-      const center = student["Preferred Exam Center"] || 'Unspecified';
-      if (!dataMap[center]) {
-        dataMap[center] = {
-          name: center,
-          students: []
-        };
+      const center = student["final_exam_center"];
+      if (center) {
+        if (!dataMap[center]) {
+          dataMap[center] = {
+            name: center,
+            students: []
+          };
+        }
+        dataMap[center].students.push(student);
       }
-      dataMap[center].students.push(student);
     });
 
     return Object.keys(dataMap).map(centerName => {

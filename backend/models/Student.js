@@ -8,7 +8,7 @@ const StudentSchema = new Schema({
   "Whatsapp Number": { type: String },
   "Subject Stream": { type: String, required: true },
   "Medium": { type: String, required: true },
-  "Preferred Exam Center": { type: String, required: true },
+  "final_exam_center": { type: String, required: true },
   "exam_center_confirmed26": { type: Boolean, default: false }, // Boolean type matching the database
   "NIC": { type: String },
   "attended_days": { type: [String], default: [] }

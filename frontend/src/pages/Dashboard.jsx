@@ -12,13 +12,15 @@ export default function Dashboard({ students = [] }) {
   const centerDataMap = {};
 
   students.forEach(student => {
-    const center = student["Preferred Exam Center"] || 'Unspecified';
-    if (!centerDataMap[center]) {
-      centerDataMap[center] = { registrations: 0, confirmations: 0 };
-    }
-    centerDataMap[center].registrations += 1;
-    if (student.exam_center_confirmed26 === true) {
-      centerDataMap[center].confirmations += 1;
+    const center = student["final_exam_center"];
+    if (center) {
+      if (!centerDataMap[center]) {
+        centerDataMap[center] = { registrations: 0, confirmations: 0 };
+      }
+      centerDataMap[center].registrations += 1;
+      if (student.exam_center_confirmed26 === true) {
+        centerDataMap[center].confirmations += 1;
+      }
     }
   });
 
@@ -76,7 +78,7 @@ export default function Dashboard({ students = [] }) {
           <div className="empty-state">
             <FaMapMarkerAlt className="empty-state-icon" />
             <h3>No exam center data found</h3>
-            <p>Database is empty or no preferred exam centers were provided.</p>
+            <p>Database is empty or no final exam centers were provided.</p>
           </div>
         ) : (
           <div className="center-grid">
