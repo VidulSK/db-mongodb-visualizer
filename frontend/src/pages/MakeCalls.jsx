@@ -192,7 +192,10 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall 
             const waNumber = (student["WhatsApp Number"] || student["Whatsapp Number"] || "").trim();
             const callLog = waNumber ? callLogs[waNumber] : null;
             const hasBeenCalled = waNumber ? !!callLog : false;
-            const isConfirmedCenter = student.exam_center_confirmed26 === true;
+            const isConfirmedCenter = student.exam_center_confirmed26 === true || 
+              student.exam_center_confirmed26 === 'true' || 
+              student.exam_center_confirmed26 === ' true' || 
+              (typeof student.exam_center_confirmed26 === 'string' && student.exam_center_confirmed26.trim() === 'true');
             const participationConfirmed = callLog?.participationConfirmed;
 
             // Use a unique key based on document ID to prevent duplicate key collisions

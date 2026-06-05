@@ -6,11 +6,23 @@ export default function Attendance({ students = [] }) {
   const [expandedCenter, setExpandedCenter] = useState(null);
 
   // Filter students to only include those where exam_center_confirmed26 is true or " true" / "true"
+  // and consider attended_days starting only from 2026-06-06 and beyond (excluding 2025)
   const confirmedStudents = useMemo(() => {
-    return students.filter(student => {
-      const val = student.exam_center_confirmed26;
-      return val === true || val === 'true' || val === ' true' || (typeof val === 'string' && val.trim() === 'true');
-    });
+    return students
+      .filter(student => {
+        const val = student.exam_center_confirmed26;
+        return val === true || val === 'true' || val === ' true' || (typeof val === 'string' && val.trim() === 'true');
+      })
+      .map(student => ({
+        ...student,
+        attended_days: Array.isArray(student.attended_days)
+          ? student.attended_days.filter(date => {
+              if (!date || typeof date !== 'string') return false;
+              const trimmed = date.trim();
+              return trimmed >= '2026-06-06' && !trimmed.startsWith('2025');
+            })
+          : []
+      }));
   }, [students]);
 
   // 1. Gather all unique dates in chronological order across all students
