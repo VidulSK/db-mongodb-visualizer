@@ -1,0 +1,222 @@
+import express from 'express';
+import http from 'http';
+import { Server } from 'socket.io';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import Student from './models/Student.js';
+import CallLog from './models/CallLog.js';
+import { primaryConnection, secondaryConnection } from './config.js';
+
+dotenv.config();
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST']
+  }
+});
+
+// Admin Session Tracking
+const activeAdminSessions = new Map(); // adminId (lowercase) -> socket.id
+
+// API Routes
+app.post('/api/login', (req, res) => {
+  const { adminId } = req.body;
+  if (!adminId) {
+    return res.status(400).json({ error: 'Admin ID is required.' });
+  }
+
+  // Parse allowed admin IDs from env
+  const permittedIds = (process.env.ADMIN_IDS || 'admin1,admin2,admin3,admin4')
+    .split(',')
+    .map(id => id.trim().toLowerCase());
+
+  const normalizedId = adminId.trim().toLowerCase();
+
+  if (!permittedIds.includes(normalizedId)) {
+    return res.status(401).json({ error: 'Invalid Admin ID.' });
+  }
+
+  // Concurrency Check: Check if this Admin ID is currently active in another session
+  const existingSocketId = activeAdminSessions.get(normalizedId);
+  if (existingSocketId) {
+    const activeSocket = io.sockets.sockets.get(existingSocketId);
+    if (activeSocket && activeSocket.connected) {
+      return res.status(403).json({ error: 'This Admin ID is currently active in another session.' });
+    } else {
+      // Clean up stale session
+      activeAdminSessions.delete(normalizedId);
+    }
+  }
+
+  res.json({ success: true, adminId: normalizedId });
+});
+
+app.get('/api/students', async (req, res) => {
+  try {
+    const students = await Student.find();
+    res.json(students);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/calls', async (req, res) => {
+  try {
+    const logs = await CallLog.find();
+    res.json(logs);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/calls', async (req, res) => {
+  const { whatsappNumber } = req.body;
+  if (!whatsappNumber) {
+    return res.status(400).json({ error: 'whatsappNumber is required' });
+  }
+  try {
+    const log = await CallLog.findOneAndUpdate(
+      { whatsappNumber },
+      { callTaken: true, calledAt: new Date() },
+      { upsert: true, new: true }
+    );
+    io.emit('call:confirmed', log);
+    res.json(log);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// WebSocket Event Listeners
+io.on('connection', (socket) => {
+  console.log('Client connected:', socket.id);
+
+  // Register Admin Session on Connection
+  socket.on('session:register', (data) => {
+    const { adminId } = data;
+    if (!adminId) return;
+
+    const normalizedId = adminId.trim().toLowerCase();
+    
+    // Check if another socket had registered this adminId
+    const previousSocketId = activeAdminSessions.get(normalizedId);
+    if (previousSocketId && previousSocketId !== socket.id) {
+      const activeSocket = io.sockets.sockets.get(previousSocketId);
+      if (activeSocket && activeSocket.connected) {
+        // If there's an active session on another socket, disconnect the new socket
+        socket.emit('session:error', { error: 'Admin ID is already active elsewhere.' });
+        socket.disconnect();
+        return;
+      }
+    }
+
+    activeAdminSessions.set(normalizedId, socket.id);
+    socket.adminId = normalizedId;
+    console.log(`Registered active session: Admin "${normalizedId}" on socket ${socket.id}`);
+  });
+
+  socket.on('call:confirm', async (data) => {
+    const { whatsappNumber } = data;
+    try {
+      const log = await CallLog.findOneAndUpdate(
+        { whatsappNumber },
+        { callTaken: true, calledAt: new Date() },
+        { upsert: true, new: true }
+      );
+      io.emit('call:confirmed', log);
+      console.log(`Call confirmed for: ${whatsappNumber} via WebSocket`);
+    } catch (error) {
+      console.error('Error confirming call via WebSocket:', error.message);
+    }
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
+    if (socket.adminId) {
+      // Clear session seat if this socket held the active session
+      if (activeAdminSessions.get(socket.adminId) === socket.id) {
+        activeAdminSessions.delete(socket.adminId);
+        console.log(`Cleared active session: Admin "${socket.adminId}" disconnected.`);
+      }
+    }
+  });
+});
+
+// Serving Compiled Frontend Assets in Production (Railway)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const distPath = path.join(__dirname, '../frontend/dist');
+
+app.use(express.static(distPath));
+
+// For Single Page Application Routing
+app.get('*', (req, res, next) => {
+  // Pass API calls to Express routing
+  if (req.path.startsWith('/api')) return next();
+  res.sendFile(path.join(distPath, 'index.html'), (err) => {
+    if (err) {
+      res.status(200).send('API Server is running. Frontend build was not found (development mode).');
+    }
+  });
+});
+
+// Database Change Streams & Polling fallback
+let studentCount = 0;
+
+try {
+  if (primaryConnection.readyState === 1) {
+    studentCount = await Student.countDocuments();
+  }
+} catch (err) {
+  // Settle quietly
+}
+
+const setupChangeStreams = async () => {
+  try {
+    if (primaryConnection.readyState !== 1) return;
+    studentCount = await Student.countDocuments();
+    const changeStream = Student.watch();
+    changeStream.on('change', async (change) => {
+      console.log('Primary DB Change detected:', change.operationType);
+      const students = await Student.find();
+      io.emit('students:update', students);
+    });
+    console.log('Change Streams successfully initialized on Student collection.');
+  } catch (e) {
+    console.log('Change Streams not supported (non-replica set). Setting up polling fallback.');
+    startPolling();
+  }
+};
+
+const startPolling = () => {
+  setInterval(async () => {
+    try {
+      if (primaryConnection.readyState !== 1) return;
+      const currentCount = await Student.countDocuments();
+      if (currentCount !== studentCount) {
+        console.log(`Syncing frontend data: registration count changed from ${studentCount} to ${currentCount}.`);
+        studentCount = currentCount;
+        const students = await Student.find();
+        io.emit('students:update', students);
+      }
+    } catch (err) {
+      console.error('Polling error:', err.message);
+    }
+  }, 5000);
+};
+
+// Wait for database connections to settle, then start watcher/polling
+setTimeout(setupChangeStreams, 5000);
+
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => {
+  console.log(`Backend server listening on port ${PORT}`);
+});
