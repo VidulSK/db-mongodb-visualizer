@@ -4,7 +4,12 @@ import { FaHome, FaPhoneAlt, FaDatabase, FaWifi } from 'react-icons/fa';
 import Dashboard from './pages/Dashboard';
 import MakeCalls from './pages/MakeCalls';
 
-const BACKEND_URL = 'http://localhost:5000';
+const BACKEND_URL =
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:5000'
+    : (window.location.port === '5173'
+      ? `http://${window.location.hostname}:5000` // Local Wi-Fi testing (phone loads PC backend)
+      : window.location.origin);
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('home');
