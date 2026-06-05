@@ -78,14 +78,14 @@ app.get('/api/calls', async (req, res) => {
 });
 
 app.post('/api/calls', async (req, res) => {
-  const { whatsappNumber } = req.body;
+  const { whatsappNumber, participationConfirmed } = req.body;
   if (!whatsappNumber) {
     return res.status(400).json({ error: 'whatsappNumber is required' });
   }
   try {
     const log = await CallLog.findOneAndUpdate(
       { whatsappNumber },
-      { callTaken: true, calledAt: new Date() },
+      { callTaken: true, calledAt: new Date(), participationConfirmed },
       { upsert: true, new: true }
     );
     io.emit('call:confirmed', log);
@@ -124,15 +124,15 @@ io.on('connection', (socket) => {
   });
 
   socket.on('call:confirm', async (data) => {
-    const { whatsappNumber } = data;
+    const { whatsappNumber, participationConfirmed } = data;
     try {
       const log = await CallLog.findOneAndUpdate(
         { whatsappNumber },
-        { callTaken: true, calledAt: new Date() },
+        { callTaken: true, calledAt: new Date(), participationConfirmed },
         { upsert: true, new: true }
       );
       io.emit('call:confirmed', log);
-      console.log(`Call confirmed for: ${whatsappNumber} via WebSocket`);
+      console.log(`Call confirmed for: ${whatsappNumber} (Participation: ${participationConfirmed}) via WebSocket`);
     } catch (error) {
       console.error('Error confirming call via WebSocket:', error.message);
     }
