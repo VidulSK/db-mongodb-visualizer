@@ -34,7 +34,7 @@ app.post('/api/login', (req, res) => {
   }
 
   // Parse allowed admin IDs from env
-  const permittedIds = (process.env.ADMIN_IDS || 'verosha@123,chethiya@123,hansani@123,vidul@123,seniru@123,senuka@123,amiru@123,sanithu@123')
+  const permittedIds = (process.env.ADMIN_IDS || 'verosha@123,chethana@123,hansani@123,vidul@123,seniru@123,senuka@123,amiru@123,sanithu@123')
     .split(',')
     .map(id => id.trim().toLowerCase());
 
