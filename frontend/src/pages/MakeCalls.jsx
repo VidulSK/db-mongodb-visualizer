@@ -1,12 +1,17 @@
 import React, { useState, useMemo } from 'react';
-import { FaPhoneAlt, FaWhatsapp, FaCheck, FaSearch, FaFilter, FaRedo } from 'react-icons/fa';
+import { FaPhoneAlt, FaWhatsapp, FaCheck, FaSearch, FaFilter, FaRedo, FaTimes, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 
 export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall }) {
-  // Filter States
+  // Filter & Sort States
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStream, setSelectedStream] = useState('');
   const [selectedCenter, setSelectedCenter] = useState('');
   const [selectedMedium, setSelectedMedium] = useState('');
+  const [sortBy, setSortBy] = useState('uncalled');
+
+  // Confirmation Modal State
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   // 1. Dynamically compute unique filter options from database fields
   const filterOptions = useMemo(() => {
@@ -33,6 +38,7 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall 
     setSelectedStream('');
     setSelectedCenter('');
     setSelectedMedium('');
+    setSortBy('uncalled');
   };
 
   // 2. Filter and sort students list
@@ -40,7 +46,7 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall 
     return students.filter(student => {
       // Text Search: matches first name, last name, or WhatsApp number
       const fullName = `${student["First Name"] || ''} ${student["Last Name"] || ''}`.toLowerCase();
-      const num = (student["Whatsapp Number"] || '').toLowerCase();
+      const num = (student["WhatsApp Number"] || student["Whatsapp Number"] || '').toLowerCase();
       const matchesSearch = searchTerm === '' || 
         fullName.includes(searchTerm.toLowerCase()) || 
         num.includes(searchTerm.toLowerCase());
@@ -52,17 +58,21 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall 
 
       return matchesSearch && matchesStream && matchesCenter && matchesMedium;
     }).sort((a, b) => {
-      // Sort: show pending calls first (uncalled students first)
-      const aCalled = !!callLogs[a["Whatsapp Number"]];
-      const bCalled = !!callLogs[b["Whatsapp Number"]];
-      if (aCalled === bCalled) {
-        const aName = `${a["First Name"]} ${a["Last Name"]}`;
-        const bName = `${b["First Name"]} ${b["Last Name"]}`;
-        return aName.localeCompare(bName);
+      // Sort dynamically based on sortBy state
+      const aCalled = !!callLogs[a["WhatsApp Number"]];
+      const bCalled = !!callLogs[b["WhatsApp Number"]];
+      if (aCalled !== bCalled) {
+        if (sortBy === 'uncalled') {
+          return aCalled ? 1 : -1;
+        } else {
+          return aCalled ? -1 : 1;
+        }
       }
-      return aCalled ? 1 : -1;
+      const aName = `${a["First Name"]} ${a["Last Name"]}`;
+      const bName = `${b["First Name"]} ${b["Last Name"]}`;
+      return aName.localeCompare(bName);
     });
-  }, [students, callLogs, searchTerm, selectedStream, selectedCenter, selectedMedium]);
+  }, [students, callLogs, searchTerm, selectedStream, selectedCenter, selectedMedium, sortBy]);
 
   // Clean WhatsApp number for link (remove plus, spaces)
   const cleanNumberForWhatsApp = (num) => {
@@ -137,6 +147,20 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall 
             ))}
           </select>
         </div>
+
+        {/* Sort By Status */}
+        <div className="form-group">
+          <label htmlFor="sort-by">Sort By Status</label>
+          <select
+            id="sort-by"
+            className="input-control"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+          >
+            <option value="uncalled">Uncalled First</option>
+            <option value="called">Called First</option>
+          </select>
+        </div>
       </div>
 
       {/* Queue Summary / Info */}
@@ -165,13 +189,18 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall 
       ) : (
         <div className="queue-grid">
           {filteredStudents.map(student => {
-            const waNumber = student["Whatsapp Number"];
-            const hasBeenCalled = !!callLogs[waNumber];
+            const waNumber = (student["WhatsApp Number"] || student["Whatsapp Number"] || "").trim();
+            const callLog = waNumber ? callLogs[waNumber] : null;
+            const hasBeenCalled = waNumber ? !!callLog : false;
             const isConfirmedCenter = student.exam_center_confirmed26 === true;
+            const participationConfirmed = callLog?.participationConfirmed;
+
+            // Use a unique key based on document ID to prevent duplicate key collisions
+            const elementKey = student._id || waNumber || `${student["First Name"]}-${student["Last Name"]}-${Math.random()}`;
 
             return (
               <div 
-                key={waNumber} 
+                key={elementKey} 
                 className={`queue-card ${hasBeenCalled ? 'called' : ''}`}
               >
                 <div className="queue-card-top">
@@ -192,27 +221,59 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall 
 
                   <div className="wa-container">
                     <span>WhatsApp:</span>
-                    <a 
-                      href={`https://wa.me/${cleanNumberForWhatsApp(waNumber)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="wa-link"
-                      title="Open chat on WhatsApp"
-                    >
-                      <FaWhatsapp /> {waNumber}
-                    </a>
+                    {waNumber ? (
+                      <a 
+                        href={`https://wa.me/${cleanNumberForWhatsApp(waNumber)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="wa-link"
+                        title="Open chat on WhatsApp"
+                      >
+                        <FaWhatsapp /> {waNumber}
+                      </a>
+                    ) : (
+                      <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontStyle: 'italic' }}>
+                        Not Provided
+                      </span>
+                    )}
                   </div>
+
+                  {hasBeenCalled && (
+                    <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
+                      <span style={{ color: 'var(--text-secondary)' }}>Participation:</span>
+                      {participationConfirmed === true ? (
+                        <span style={{ padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', background: 'rgba(5, 150, 105, 0.15)', color: 'var(--secondary)', border: '1px solid rgba(5, 150, 105, 0.25)', textTransform: 'uppercase', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                          <FaCheckCircle size={10} /> Confirmed (Yes)
+                        </span>
+                      ) : participationConfirmed === false ? (
+                        <span style={{ padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', background: 'rgba(239, 68, 68, 0.15)', color: 'var(--danger)', border: '1px solid rgba(239, 68, 68, 0.25)', textTransform: 'uppercase', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                          <FaTimesCircle size={10} /> Declined (No)
+                        </span>
+                      ) : (
+                        <span style={{ padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', background: 'rgba(100, 116, 139, 0.15)', color: 'var(--text-muted)', border: '1px solid rgba(100, 116, 139, 0.25)', textTransform: 'uppercase' }}>
+                          Unspecified
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="queue-card-actions">
-                  {hasBeenCalled ? (
+                  {!waNumber ? (
+                    <button className="btn-confirm-call completed" style={{ background: 'rgba(15, 23, 42, 0.05)', color: 'var(--text-muted)', borderColor: 'var(--border-color)', cursor: 'not-allowed' }} disabled>
+                      No WhatsApp Number
+                    </button>
+                  ) : hasBeenCalled ? (
                     <button className="btn-confirm-call completed" disabled>
                       <FaCheck /> Call Logged
                     </button>
                   ) : (
                     <button 
                       className="btn-confirm-call pending"
-                      onClick={() => onConfirmCall(waNumber)}
+                      onClick={() => {
+                        setSelectedStudent(student);
+                        setShowConfirmModal(true);
+                      }}
                     >
                       <FaPhoneAlt size={12} /> Confirm Call Taken
                     </button>
@@ -223,6 +284,61 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall 
           })}
         </div>
       )}
+
+      {/* Confirmation Popup Modal */}
+      {showConfirmModal && selectedStudent && (() => {
+        const selectedStudentWANumber = (selectedStudent["WhatsApp Number"] || selectedStudent["Whatsapp Number"] || "").trim();
+        return (
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h3>Confirm Student Call</h3>
+              </div>
+              <div className="modal-body">
+                <p>Did you connect with the student and is their participation confirmed?</p>
+                <div className="modal-student-info">
+                  {selectedStudent["First Name"]} {selectedStudent["Last Name"]}
+                  <br />
+                  <span style={{ fontSize: '0.8rem', fontWeight: 'normal' }}>
+                    WhatsApp: {selectedStudentWANumber}
+                  </span>
+                </div>
+              </div>
+              <div className="modal-actions">
+                <button 
+                  className="modal-btn yes"
+                  onClick={() => {
+                    onConfirmCall(selectedStudentWANumber, true);
+                    setShowConfirmModal(false);
+                    setSelectedStudent(null);
+                  }}
+                >
+                  <FaCheck /> Yes, Confirmed
+                </button>
+                <button 
+                  className="modal-btn no"
+                  onClick={() => {
+                    onConfirmCall(selectedStudentWANumber, false);
+                    setShowConfirmModal(false);
+                    setSelectedStudent(null);
+                  }}
+                >
+                  <FaTimes /> No, Declined
+                </button>
+                <button 
+                  className="modal-btn cancel"
+                  onClick={() => {
+                    setShowConfirmModal(false);
+                    setSelectedStudent(null);
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

@@ -124,17 +124,22 @@ export default function App() {
   };
 
   // 3. Confirm call handler
-  const handleConfirmCall = (whatsappNumber) => {
+  const handleConfirmCall = (whatsappNumber, participationConfirmed) => {
     if (!socketInstance) return;
 
     // Optimistic UI update
     setCallLogs(prevLogs => ({
       ...prevLogs,
-      [whatsappNumber]: { whatsappNumber, callTaken: true, calledAt: new Date().toISOString() }
+      [whatsappNumber]: { 
+        whatsappNumber, 
+        callTaken: true, 
+        participationConfirmed, 
+        calledAt: new Date().toISOString() 
+      }
     }));
 
     // Emit confirmation event to server
-    socketInstance.emit('call:confirm', { whatsappNumber });
+    socketInstance.emit('call:confirm', { whatsappNumber, participationConfirmed });
   };
 
   // Render Login screen if not authenticated

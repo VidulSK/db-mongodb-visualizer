@@ -4,7 +4,8 @@ import { primaryConnection } from '../config.js';
 const StudentSchema = new Schema({
   "First Name": { type: String, required: true },
   "Last Name": { type: String, required: true },
-  "Whatsapp Number": { type: String, required: true, unique: true },
+  "WhatsApp Number": { type: String },
+  "Whatsapp Number": { type: String },
   "Subject Stream": { type: String, required: true },
   "Medium": { type: String, required: true },
   "Preferred Exam Center": { type: String, required: true },
