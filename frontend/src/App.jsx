@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import io from 'socket.io-client';
-import { FaHome, FaPhoneAlt, FaDatabase, FaWifi, FaSignOutAlt } from 'react-icons/fa';
+import { FaHome, FaPhoneAlt, FaDatabase, FaWifi, FaSignOutAlt, FaCalendarAlt } from 'react-icons/fa';
 import Dashboard from './pages/Dashboard';
 import MakeCalls from './pages/MakeCalls';
+import Attendance from './pages/Attendance';
 import Login from './pages/Login';
 
 const BACKEND_URL =
@@ -202,18 +203,26 @@ export default function App() {
         >
           <FaPhoneAlt size={13} /> Make Calls Queue
         </button>
+        <button
+          className={`tab-btn ${activeTab === 'attendance' ? 'active' : ''}`}
+          onClick={() => setActiveTab('attendance')}
+        >
+          <FaCalendarAlt size={13} /> Attendance Tracker
+        </button>
       </nav>
 
       {/* Main Pages Content */}
       <main>
         {activeTab === 'home' ? (
           <Dashboard students={students} />
-        ) : (
+        ) : activeTab === 'calls' ? (
           <MakeCalls
             students={students}
             callLogs={callLogs}
             onConfirmCall={handleConfirmCall}
           />
+        ) : (
+          <Attendance students={students} />
         )}
       </main>
     </div>

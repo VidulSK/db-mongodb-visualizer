@@ -9,7 +9,9 @@ const StudentSchema = new Schema({
   "Subject Stream": { type: String, required: true },
   "Medium": { type: String, required: true },
   "Preferred Exam Center": { type: String, required: true },
-  "exam_center_confirmed26": { type: Boolean, default: false } // Boolean type matching the database
+  "exam_center_confirmed26": { type: Boolean, default: false }, // Boolean type matching the database
+  "NIC": { type: String },
+  "attended_days": { type: [String], default: [] }
 }, { timestamps: true });
 
 // Explicitly compile the model on the collection 'sme26registrations'

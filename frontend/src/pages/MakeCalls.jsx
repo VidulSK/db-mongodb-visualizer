@@ -220,16 +220,14 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall 
                   </div>
 
                   <div className="wa-container">
-                    <span>WhatsApp:</span>
+                    <span>Phone:</span>
                     {waNumber ? (
                       <a 
-                        href={`https://wa.me/${cleanNumberForWhatsApp(waNumber)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        href={`tel:${waNumber.replace(/[^\d+]/g, '')}`}
                         className="wa-link"
-                        title="Open chat on WhatsApp"
+                        title="Call Student"
                       >
-                        <FaWhatsapp /> {waNumber}
+                        <FaPhoneAlt size={12} /> {waNumber}
                       </a>
                     ) : (
                       <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontStyle: 'italic' }}>

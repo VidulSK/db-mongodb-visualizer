@@ -26,6 +26,30 @@ const io = new Server(server, {
 // Admin Session Tracking
 const activeAdminSessions = new Map(); // adminId (lowercase) -> socket.id
 
+// Helper function to look up student fields for secondary DB logging
+async function getStudentFields(whatsappNumber) {
+  try {
+    const student = await Student.findOne({
+      $or: [
+        { "WhatsApp Number": whatsappNumber },
+        { "Whatsapp Number": whatsappNumber }
+      ]
+    });
+    if (student) {
+      return {
+        firstName: student["First Name"],
+        lastName: student["Last Name"],
+        examCenter: student["Preferred Exam Center"],
+        nic: student["NIC"],
+        studentId: student._id ? student._id.toString() : undefined
+      };
+    }
+  } catch (err) {
+    console.error("Error looking up student for secondary database:", err.message);
+  }
+  return {};
+}
+
 // API Routes
 app.post('/api/login', (req, res) => {
   const { adminId } = req.body;
@@ -83,9 +107,15 @@ app.post('/api/calls', async (req, res) => {
     return res.status(400).json({ error: 'whatsappNumber is required' });
   }
   try {
+    const studentFields = await getStudentFields(whatsappNumber);
     const log = await CallLog.findOneAndUpdate(
       { whatsappNumber },
-      { callTaken: true, calledAt: new Date(), participationConfirmed },
+      { 
+        callTaken: true, 
+        calledAt: new Date(), 
+        participationConfirmed,
+        ...studentFields 
+      },
       { upsert: true, new: true }
     );
     io.emit('call:confirmed', log);
@@ -126,9 +156,15 @@ io.on('connection', (socket) => {
   socket.on('call:confirm', async (data) => {
     const { whatsappNumber, participationConfirmed } = data;
     try {
+      const studentFields = await getStudentFields(whatsappNumber);
       const log = await CallLog.findOneAndUpdate(
         { whatsappNumber },
-        { callTaken: true, calledAt: new Date(), participationConfirmed },
+        { 
+          callTaken: true, 
+          calledAt: new Date(), 
+          participationConfirmed,
+          ...studentFields 
+        },
         { upsert: true, new: true }
       );
       io.emit('call:confirmed', log);
