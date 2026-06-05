@@ -58,7 +58,7 @@ app.post('/api/login', (req, res) => {
   }
 
   // Parse allowed admin IDs from env
-  const permittedIds = (process.env.ADMIN_IDS || 'verosha@123,chethana@123,hansani@123,vidul@123,seniru@123,senuka@123,amiru@123,sanithu@123')
+  const permittedIds = (process.env.ADMIN_IDS || 'verosha@123, chethana@123, hansani@123, vidul@123, seniru@123, senuka@123, amiru@123, sanithu@123, admin@malabe, admin@colpetty, admin@ampara, admin@kandy, admin@kalutara, admin@matara, admin@ratnapura, admin2@malabe, admin2@colpetty, admin2@ampara, admin2@kandy, admin2@kalutara, admin2@matara, admin2@ratnapura')
     .split(',')
     .map(id => id.trim().toLowerCase());
 
@@ -110,11 +110,11 @@ app.post('/api/calls', async (req, res) => {
     const studentFields = await getStudentFields(whatsappNumber);
     const log = await CallLog.findOneAndUpdate(
       { whatsappNumber },
-      { 
-        callTaken: true, 
-        calledAt: new Date(), 
+      {
+        callTaken: true,
+        calledAt: new Date(),
         participationConfirmed,
-        ...studentFields 
+        ...studentFields
       },
       { upsert: true, new: true }
     );
@@ -159,11 +159,11 @@ io.on('connection', (socket) => {
       const studentFields = await getStudentFields(whatsappNumber);
       const log = await CallLog.findOneAndUpdate(
         { whatsappNumber },
-        { 
-          callTaken: true, 
-          calledAt: new Date(), 
+        {
+          callTaken: true,
+          calledAt: new Date(),
           participationConfirmed,
-          ...studentFields 
+          ...studentFields
         },
         { upsert: true, new: true }
       );
