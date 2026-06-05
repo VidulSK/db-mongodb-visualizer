@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import io from 'socket.io-client';
-import { FaHome, FaPhoneAlt, FaDatabase, FaWifi } from 'react-icons/fa';
+import { FaHome, FaPhoneAlt, FaDatabase, FaWifi, FaSignOutAlt } from 'react-icons/fa';
 import Dashboard from './pages/Dashboard';
 import MakeCalls from './pages/MakeCalls';
+import Login from './pages/Login';
 
 const BACKEND_URL =
   window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
@@ -12,6 +13,8 @@ const BACKEND_URL =
       : window.location.origin);
 
 export default function App() {
+  const [adminId, setAdminId] = useState(localStorage.getItem('adminId') || '');
+  const [loginError, setLoginError] = useState('');
   const [activeTab, setActiveTab] = useState('home');
   const [students, setStudents] = useState([]);
   const [callLogs, setCallLogs] = useState({});
@@ -20,6 +23,7 @@ export default function App() {
 
   // 1. Fetch initial registrations and call logs
   const fetchData = async () => {
+    if (!adminId) return;
     try {
       const studentRes = await fetch(`${BACKEND_URL}/api/students`);
       const studentData = await studentRes.json();
@@ -43,6 +47,15 @@ export default function App() {
   };
 
   useEffect(() => {
+    if (!adminId) {
+      if (socketInstance) {
+        socketInstance.disconnect();
+        setSocketInstance(null);
+      }
+      setIsConnected(false);
+      return;
+    }
+
     fetchData();
 
     // 2. Setup Socket.io real-time connection
@@ -55,11 +68,21 @@ export default function App() {
     socket.on('connect', () => {
       console.log('Connected to real-time server');
       setIsConnected(true);
+      
+      // Register Admin Session with the Backend on Connection
+      socket.emit('session:register', { adminId });
     });
 
     socket.on('disconnect', () => {
       console.log('Disconnected from real-time server');
       setIsConnected(false);
+    });
+
+    // Listen for WebSocket concurrency error (e.g. seat taken)
+    socket.on('session:error', (data) => {
+      console.error('Session error:', data.error);
+      setLoginError(data.error || 'Session terminated due to another login.');
+      handleLogout();
     });
 
     // Receive student registration updates (e.g. from change stream or polling backend)
@@ -82,7 +105,23 @@ export default function App() {
     return () => {
       socket.disconnect();
     };
-  }, []);
+  }, [adminId]);
+
+  const handleLoginSuccess = (id) => {
+    localStorage.setItem('adminId', id);
+    setAdminId(id);
+    setLoginError('');
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('adminId');
+    setAdminId('');
+    if (socketInstance) {
+      socketInstance.disconnect();
+      setSocketInstance(null);
+    }
+    setIsConnected(false);
+  };
 
   // 3. Confirm call handler
   const handleConfirmCall = (whatsappNumber) => {
@@ -98,6 +137,18 @@ export default function App() {
     socketInstance.emit('call:confirm', { whatsappNumber });
   };
 
+  // Render Login screen if not authenticated
+  if (!adminId) {
+    return (
+      <Login 
+        onLoginSuccess={handleLoginSuccess} 
+        errorMsg={loginError} 
+        setErrorMsg={setLoginError} 
+        BACKEND_URL={BACKEND_URL} 
+      />
+    );
+  }
+
   return (
     <div className="app-container">
       {/* Header */}
@@ -109,17 +160,26 @@ export default function App() {
           Real-time synchronized student dashboard and exam confirmation tracker linked to MongoDB databases.
         </p>
 
-        {/* Live sync badge */}
-        <div className="connection-status">
-          <span className={`status-dot ${isConnected ? 'connected' : 'disconnected'}`}></span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-            <FaWifi /> {isConnected ? 'Live Connected' : 'Offline / Reconnecting'}
-          </span>
-          {isConnected && (
-            <span className="live-indicator">
-              <span className="live-dot"></span> Sync Active
+        {/* Live sync badge & Admin logout */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+          <div className="connection-status" style={{ marginTop: 0 }}>
+            <span className={`status-dot ${isConnected ? 'connected' : 'disconnected'}`}></span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+              <FaWifi /> {isConnected ? 'Live Connected' : 'Offline / Reconnecting'}
             </span>
-          )}
+            {isConnected && (
+              <span className="live-indicator">
+                <span className="live-dot"></span> Sync Active
+              </span>
+            )}
+          </div>
+          
+          <div className="connection-status" style={{ marginTop: 0, gap: '0.75rem', paddingRight: '0.5rem' }}>
+            <span>Admin: <strong style={{ textTransform: 'capitalize' }}>{adminId}</strong></span>
+            <button className="btn-logout" onClick={handleLogout}>
+              <FaSignOutAlt size={11} /> Logout
+            </button>
+          </div>
         </div>
       </header>
 
@@ -154,3 +214,4 @@ export default function App() {
     </div>
   );
 }
+
