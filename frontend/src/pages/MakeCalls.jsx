@@ -312,7 +312,7 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall 
                               Normal Voice Call
                             </a>
                             <a
-                              href={`https://wa.me/${cleanNumberForWhatsApp(waNumber)}?text=අපි සස්නක සංසදයෙන්. ඔයා අපේ mock exam එකට register වෙලා ඉන්නවානේ.%0A%0Aකොළඹ, නුවර, කුරුණෑගල, මාතර, කළුතර centers වල හෙට තියෙන්නේ chemistry. මේ exam එක  නොමිලේ කරන්නේ. ඔයා අද එකට ආවත් නැතත් subject wise z score එකක් ලැබෙන නිසා ඔයාලාට ඒක වටීවි%0A%0Aඔයා හෙට එයි කියලා අපි බලාපොරොත්තු වෙනවා.%0A%F0%9F%8C%9D%F0%9F%A9%B7`}
+                              href={`https://wa.me/${cleanNumberForWhatsApp(waNumber)}?text=අපි සස්නක සංසදයෙන්. ඔයා අපේ mock exam එකට register වෙලා ඉන්නවානේ.%0A%0Aකොළඹ, නුවර, කුරුණෑගල, මාතර, කළුතර centers වල හෙට තියෙන්නේ chemistry සහ ICT. මේ exam එක  නොමිලේ කරන්නේ. ඔයා අද එකට ආවත් නැතත් subject wise z score එකක් ලැබෙන නිසා ඔයාලාට ඒක වටීවි%0A%0Aඔයා හෙට එයි කියලා අපි බලාපොරොත්තු වෙනවා.%0A%F0%9F%8C%9D%F0%9F%A9%B7`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="phone-dropdown-item"
