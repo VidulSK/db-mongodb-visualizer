@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { FaPhoneAlt, FaWhatsapp, FaCheck, FaSearch, FaFilter, FaRedo, FaTimes, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 
 export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall }) {
@@ -12,6 +12,17 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall 
   // Confirmation Modal State
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+  // Active phone action menu state
+  const [openPhoneMenuId, setOpenPhoneMenuId] = useState(null);
+
+  // Click outside to close phone menu
+  useEffect(() => {
+    if (openPhoneMenuId === null) return;
+    const handleClose = () => setOpenPhoneMenuId(null);
+    document.addEventListener('click', handleClose);
+    return () => document.removeEventListener('click', handleClose);
+  }, [openPhoneMenuId]);
 
   // 1. Dynamically compute unique filter options from database fields
   const filterOptions = useMemo(() => {
@@ -47,8 +58,8 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall 
       // Text Search: matches first name, last name, or WhatsApp number
       const fullName = `${student["First Name"] || ''} ${student["Last Name"] || ''}`.toLowerCase();
       const num = (student["WhatsApp Number"] || student["Whatsapp Number"] || '').toLowerCase();
-      const matchesSearch = searchTerm === '' || 
-        fullName.includes(searchTerm.toLowerCase()) || 
+      const matchesSearch = searchTerm === '' ||
+        fullName.includes(searchTerm.toLowerCase()) ||
         num.includes(searchTerm.toLowerCase());
 
       // Dropdown filters
@@ -74,9 +85,20 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall 
     });
   }, [students, callLogs, searchTerm, selectedStream, selectedCenter, selectedMedium, sortBy]);
 
-  // Clean WhatsApp number for link (remove plus, spaces)
+  // Clean WhatsApp number for link (ensure 94 prefix, remove leading 0, ensure 9 mobile digits)
   const cleanNumberForWhatsApp = (num) => {
-    return num ? num.replace(/[^\d]/g, '') : '';
+    if (!num) return '';
+    let cleaned = num.replace(/\D/g, '');
+    if (cleaned.startsWith('94') && cleaned.length === 11) {
+      return cleaned;
+    }
+    if (cleaned.startsWith('0')) {
+      cleaned = cleaned.substring(1);
+    }
+    if (cleaned.length === 9) {
+      return '94' + cleaned;
+    }
+    return cleaned.startsWith('94') ? cleaned : '94' + cleaned;
   };
 
   return (
@@ -169,9 +191,9 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall 
           Showing <strong>{filteredStudents.length}</strong> of <strong>{students.length}</strong> students
         </div>
         {(searchTerm || selectedStream || selectedCenter || selectedMedium) && (
-          <button 
-            onClick={resetFilters} 
-            className="tab-btn" 
+          <button
+            onClick={resetFilters}
+            className="tab-btn"
             style={{ padding: '0.4rem 1rem', fontSize: '0.8rem', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)' }}
           >
             <FaRedo size={10} /> Reset Filters
@@ -192,9 +214,9 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall 
             const waNumber = (student["WhatsApp Number"] || student["Whatsapp Number"] || "").trim();
             const callLog = waNumber ? callLogs[waNumber] : null;
             const hasBeenCalled = waNumber ? !!callLog : false;
-            const isConfirmedCenter = student.exam_center_confirmed26 === true || 
-              student.exam_center_confirmed26 === 'true' || 
-              student.exam_center_confirmed26 === ' true' || 
+            const isConfirmedCenter = student.exam_center_confirmed26 === true ||
+              student.exam_center_confirmed26 === 'true' ||
+              student.exam_center_confirmed26 === ' true' ||
               (typeof student.exam_center_confirmed26 === 'string' && student.exam_center_confirmed26.trim() === 'true');
             const participationConfirmed = callLog?.participationConfirmed;
 
@@ -202,8 +224,8 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall 
             const elementKey = student._id || waNumber || `${student["First Name"]}-${student["Last Name"]}-${Math.random()}`;
 
             return (
-              <div 
-                key={elementKey} 
+              <div
+                key={elementKey}
                 className={`queue-card ${hasBeenCalled ? 'called' : ''}`}
               >
                 <div className="queue-card-top">
@@ -222,16 +244,98 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall 
                     {student["Medium"] && <span className="detail-badge medium">{student["Medium"]}</span>}
                   </div>
 
-                  <div className="wa-container">
+                  <div className="wa-container" style={{ position: 'relative' }}>
                     <span>Phone:</span>
                     {waNumber ? (
-                      <a 
-                        href={`tel:${waNumber.replace(/[^\d+]/g, '')}`}
-                        className="wa-link"
-                        title="Call Student"
-                      >
-                        <FaPhoneAlt size={12} /> {waNumber}
-                      </a>
+                      <div className="phone-menu-wrapper" style={{ display: 'inline-block' }}>
+                        <button
+                          type="button"
+                          className="wa-link phone-trigger-btn"
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: 0,
+                            font: 'inherit',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.4rem',
+                            textDecoration: 'underline'
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenPhoneMenuId(openPhoneMenuId === elementKey ? null : elementKey);
+                          }}
+                          title="Click for calling options"
+                        >
+                          <FaPhoneAlt size={12} /> {waNumber}
+                        </button>
+
+                        {openPhoneMenuId === elementKey && (
+                          <div
+                            className="phone-dropdown-menu"
+                            style={{
+                              position: 'absolute',
+                              top: '100%',
+                              left: '0',
+                              zIndex: 100,
+                              background: '#ffffff',
+                              border: '1px solid var(--border-color)',
+                              borderRadius: '8px',
+                              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                              marginTop: '0.25rem',
+                              overflow: 'hidden',
+                              minWidth: '160px',
+                              display: 'flex',
+                              flexDirection: 'column'
+                            }}
+                          >
+                            <a
+                              href={`tel:${waNumber.replace(/[^\d+]/g, '')}`}
+                              className="phone-dropdown-item"
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                padding: '0.6rem 0.8rem',
+                                color: '#1e293b',
+                                textDecoration: 'none',
+                                fontSize: '0.85rem',
+                                borderBottom: '1px solid var(--border-color)',
+                                transition: 'background 0.2s',
+                                fontWeight: '500',
+                                textAlign: 'left'
+                              }}
+                              onClick={() => setOpenPhoneMenuId(null)}
+                            >
+                              <FaPhoneAlt size={11} style={{ color: 'var(--primary)' }} />
+                              Normal Voice Call
+                            </a>
+                            <a
+                              href={`https://wa.me/${cleanNumberForWhatsApp(waNumber)}?text=අපි සස්නක සංසදයෙන්. ඔයා අපේ mock exam එකට register වෙලා ඉන්නවානේ.%0A%0Aකොළඹ, නුවර, කුරුණෑගල, මාතර, කළුතර centers වල හෙට තියෙන්නේ chemistry. මේ exam එක  නොමිලේ කරන්නේ. ඔයා අද එකට ආවත් නැතත් subject wise z score එකක් ලැබෙන නිසා ඔයාලාට ඒක වටීවි%0A%0Aඔයා හෙට එයි කියලා අපි බලාපොරොත්තු වෙනවා.%0A%F0%9F%8C%9D%F0%9F%A9%B7`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="phone-dropdown-item"
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                padding: '0.6rem 0.8rem',
+                                color: '#1e293b',
+                                textDecoration: 'none',
+                                fontSize: '0.85rem',
+                                transition: 'background 0.2s',
+                                fontWeight: '500',
+                                textAlign: 'left'
+                              }}
+                              onClick={() => setOpenPhoneMenuId(null)}
+                            >
+                              <FaWhatsapp size={12} style={{ color: '#25D366' }} />
+                              Chat on WhatsApp
+                            </a>
+                          </div>
+                        )}
+                      </div>
                     ) : (
                       <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontStyle: 'italic' }}>
                         Not Provided
@@ -269,7 +373,7 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall 
                       <FaCheck /> Call Logged
                     </button>
                   ) : (
-                    <button 
+                    <button
                       className="btn-confirm-call pending"
                       onClick={() => {
                         setSelectedStudent(student);
@@ -306,7 +410,7 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall 
                 </div>
               </div>
               <div className="modal-actions">
-                <button 
+                <button
                   className="modal-btn yes"
                   onClick={() => {
                     onConfirmCall(selectedStudentWANumber, true);
@@ -316,7 +420,7 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall 
                 >
                   <FaCheck /> Yes, Confirmed
                 </button>
-                <button 
+                <button
                   className="modal-btn no"
                   onClick={() => {
                     onConfirmCall(selectedStudentWANumber, false);
@@ -326,7 +430,7 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall 
                 >
                   <FaTimes /> No, Declined
                 </button>
-                <button 
+                <button
                   className="modal-btn cancel"
                   onClick={() => {
                     setShowConfirmModal(false);
