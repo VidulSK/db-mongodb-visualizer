@@ -21,7 +21,7 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall 
 
     students.forEach(student => {
       if (student["Subject Stream"]) streams.add(student["Subject Stream"]);
-      if (student["Preferred Exam Center"]) centers.add(student["Preferred Exam Center"]);
+      if (student["final_exam_center"]) centers.add(student["final_exam_center"]);
       if (student["Medium"]) mediums.add(student["Medium"]);
     });
 
@@ -53,7 +53,7 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall 
 
       // Dropdown filters
       const matchesStream = selectedStream === '' || student["Subject Stream"] === selectedStream;
-      const matchesCenter = selectedCenter === '' || student["Preferred Exam Center"] === selectedCenter;
+      const matchesCenter = selectedCenter === '' || student["final_exam_center"] === selectedCenter;
       const matchesMedium = selectedMedium === '' || student["Medium"] === selectedMedium;
 
       return matchesSearch && matchesStream && matchesCenter && matchesMedium;
@@ -214,9 +214,9 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall 
                   </div>
 
                   <div className="details-list">
-                    <span className="detail-badge stream">{student["Subject Stream"]}</span>
-                    <span className="detail-badge center">{student["Preferred Exam Center"]}</span>
-                    <span className="detail-badge medium">{student["Medium"]}</span>
+                    {student["Subject Stream"] && <span className="detail-badge stream">{student["Subject Stream"]}</span>}
+                    {student["final_exam_center"] && <span className="detail-badge center">{student["final_exam_center"]}</span>}
+                    {student["Medium"] && <span className="detail-badge medium">{student["Medium"]}</span>}
                   </div>
 
                   <div className="wa-container">

@@ -5,10 +5,18 @@ export default function Attendance({ students = [] }) {
   const [selectedDate, setSelectedDate] = useState('all');
   const [expandedCenter, setExpandedCenter] = useState(null);
 
+  // Filter students to only include those where exam_center_confirmed26 is true or " true" / "true"
+  const confirmedStudents = useMemo(() => {
+    return students.filter(student => {
+      const val = student.exam_center_confirmed26;
+      return val === true || val === 'true' || val === ' true' || (typeof val === 'string' && val.trim() === 'true');
+    });
+  }, [students]);
+
   // 1. Gather all unique dates in chronological order across all students
   const allDates = useMemo(() => {
     const dates = new Set();
-    students.forEach(student => {
+    confirmedStudents.forEach(student => {
       if (Array.isArray(student.attended_days)) {
         student.attended_days.forEach(date => {
           if (date && typeof date === 'string') {
@@ -18,20 +26,20 @@ export default function Attendance({ students = [] }) {
       }
     });
     return Array.from(dates).sort();
-  }, [students]);
+  }, [confirmedStudents]);
 
   // 2. Compute overall summary stats for the active date selection
   const overallStats = useMemo(() => {
-    const totalStudents = students.length;
+    const totalStudents = confirmedStudents.length;
     if (totalStudents === 0) return { total: 0, attended: 0, percentage: 0 };
 
     let attendedCount = 0;
     if (selectedDate === 'all') {
       // Attended at least once
-      attendedCount = students.filter(s => Array.isArray(s.attended_days) && s.attended_days.length > 0).length;
+      attendedCount = confirmedStudents.filter(s => Array.isArray(s.attended_days) && s.attended_days.length > 0).length;
     } else {
       // Attended on selectedDate
-      attendedCount = students.filter(s => Array.isArray(s.attended_days) && s.attended_days.includes(selectedDate)).length;
+      attendedCount = confirmedStudents.filter(s => Array.isArray(s.attended_days) && s.attended_days.includes(selectedDate)).length;
     }
 
     return {
@@ -39,21 +47,23 @@ export default function Attendance({ students = [] }) {
       attended: attendedCount,
       percentage: Math.round((attendedCount / totalStudents) * 100) || 0
     };
-  }, [students, selectedDate]);
+  }, [confirmedStudents, selectedDate]);
 
   // 3. Compute stats for each exam center
   const centerData = useMemo(() => {
     const dataMap = {};
 
-    students.forEach(student => {
-      const center = student["Preferred Exam Center"] || 'Unspecified';
-      if (!dataMap[center]) {
-        dataMap[center] = {
-          name: center,
-          students: []
-        };
+    confirmedStudents.forEach(student => {
+      const center = student["final_exam_center"];
+      if (center) {
+        if (!dataMap[center]) {
+          dataMap[center] = {
+            name: center,
+            students: []
+          };
+        }
+        dataMap[center].students.push(student);
       }
-      dataMap[center].students.push(student);
     });
 
     return Object.keys(dataMap).map(centerName => {
@@ -119,7 +129,7 @@ export default function Attendance({ students = [] }) {
       };
     }).sort((a, b) => b.totalRegistered - a.totalRegistered);
 
-  }, [students, selectedDate, allDates]);
+  }, [confirmedStudents, selectedDate, allDates]);
 
   const toggleCenter = (centerName) => {
     if (expandedCenter === centerName) {
