@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { FaPhoneAlt, FaWhatsapp, FaCheck, FaSearch, FaFilter, FaRedo, FaTimes, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 
-export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall }) {
+export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall, adminId, whatsappConfig = { template: '', greetings: [] } }) {
   // Filter & Sort States
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStream, setSelectedStream] = useState('');
@@ -13,16 +13,40 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall 
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
-  // Active phone action menu state
-  const [openPhoneMenuId, setOpenPhoneMenuId] = useState(null);
+  // WhatsApp click session counter
+  const [clickSessionCounter, setClickSessionCounter] = useState(() => {
+    const key = `whatsapp_count_${adminId || 'default'}`;
+    return parseInt(localStorage.getItem(key) || '0', 10);
+  });
 
-  // Click outside to close phone menu
-  useEffect(() => {
-    if (openPhoneMenuId === null) return;
-    const handleClose = () => setOpenPhoneMenuId(null);
-    document.addEventListener('click', handleClose);
-    return () => document.removeEventListener('click', handleClose);
-  }, [openPhoneMenuId]);
+  const incrementClickCount = () => {
+    const key = `whatsapp_count_${adminId || 'default'}`;
+    const nextVal = clickSessionCounter + 1;
+    localStorage.setItem(key, nextVal.toString());
+    setClickSessionCounter(nextVal);
+  };
+
+  const getWhatsAppLink = (student) => {
+    const waNumber = (student["WhatsApp Number"] || student["Whatsapp Number"] || "").trim();
+    if (!waNumber) return '';
+
+    const greetingsList = whatsappConfig.greetings && whatsappConfig.greetings.length > 0
+      ? whatsappConfig.greetings
+      : ['Hi', 'Hello'];
+
+    const greetingIndex = Math.floor(clickSessionCounter / 10) % greetingsList.length;
+    const currentGreeting = greetingsList[greetingIndex];
+
+    const template = whatsappConfig.template || '';
+    const formattedText = template
+      .replace(/{greeting}/g, currentGreeting)
+      .replace(/{firstName}/g, student["First Name"] || "")
+      .replace(/{lastName}/g, student["Last Name"] || "")
+      .replace(/{examCenter}/g, student["Preferred Exam Center"] || student["final_exam_center"] || "");
+
+    const cleanedNum = cleanNumberForWhatsApp(waNumber);
+    return `https://wa.me/${cleanedNum}?text=${encodeURIComponent(formattedText)}`;
+  };
 
   // 1. Dynamically compute unique filter options from database fields
   const filterOptions = useMemo(() => {
@@ -247,95 +271,16 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall 
                   <div className="wa-container" style={{ position: 'relative' }}>
                     <span>Phone:</span>
                     {waNumber ? (
-                      <div className="phone-menu-wrapper" style={{ display: 'inline-block' }}>
-                        <button
-                          type="button"
-                          className="wa-link phone-trigger-btn"
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            cursor: 'pointer',
-                            padding: 0,
-                            font: 'inherit',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.4rem',
-                            textDecoration: 'underline'
-                          }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setOpenPhoneMenuId(openPhoneMenuId === elementKey ? null : elementKey);
-                          }}
-                          title="Click for calling options"
-                        >
-                          <FaPhoneAlt size={12} /> {waNumber}
-                        </button>
-
-                        {openPhoneMenuId === elementKey && (
-                          <div
-                            className="phone-dropdown-menu"
-                            style={{
-                              position: 'absolute',
-                              top: '100%',
-                              left: '0',
-                              zIndex: 100,
-                              background: '#ffffff',
-                              border: '1px solid var(--border-color)',
-                              borderRadius: '8px',
-                              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                              marginTop: '0.25rem',
-                              overflow: 'hidden',
-                              minWidth: '160px',
-                              display: 'flex',
-                              flexDirection: 'column'
-                            }}
-                          >
-                            <a
-                              href={`tel:${waNumber.replace(/[^\d+]/g, '')}`}
-                              className="phone-dropdown-item"
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.5rem',
-                                padding: '0.6rem 0.8rem',
-                                color: '#1e293b',
-                                textDecoration: 'none',
-                                fontSize: '0.85rem',
-                                borderBottom: '1px solid var(--border-color)',
-                                transition: 'background 0.2s',
-                                fontWeight: '500',
-                                textAlign: 'left'
-                              }}
-                              onClick={() => setOpenPhoneMenuId(null)}
-                            >
-                              <FaPhoneAlt size={11} style={{ color: 'var(--primary)' }} />
-                              Normal Voice Call
-                            </a>
-                            <a
-                              href={`https://wa.me/${cleanNumberForWhatsApp(waNumber)}?text=අපි සස්නක සංසදයෙන්. ඔයා අපේ mock exam එකට register වෙලා ඉන්නවානේ.%0A%0Aකොළඹ, නුවර, කුරුණෑගල, මාතර, කළුතර centers වල හෙට තියෙන්නේ chemistry සහ ICT. මේ exam එක  නොමිලේ කරන්නේ. ඔයා අද එකට ආවත් නැතත් subject wise z score එකක් ලැබෙන නිසා ඔයාලාට ඒක වටීවි%0A%0Aඔයා හෙට එයි කියලා අපි බලාපොරොත්තු වෙනවා.%0A%F0%9F%8C%9D%F0%9F%A9%B7`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="phone-dropdown-item"
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.5rem',
-                                padding: '0.6rem 0.8rem',
-                                color: '#1e293b',
-                                textDecoration: 'none',
-                                fontSize: '0.85rem',
-                                transition: 'background 0.2s',
-                                fontWeight: '500',
-                                textAlign: 'left'
-                              }}
-                              onClick={() => setOpenPhoneMenuId(null)}
-                            >
-                              <FaWhatsapp size={12} style={{ color: '#25D366' }} />
-                              Chat on WhatsApp
-                            </a>
-                          </div>
-                        )}
-                      </div>
+                      <a 
+                        href={getWhatsAppLink(student)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="wa-link"
+                        title="Open chat on WhatsApp"
+                        onClick={incrementClickCount}
+                      >
+                        <FaWhatsapp /> {waNumber}
+                      </a>
                     ) : (
                       <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontStyle: 'italic' }}>
                         Not Provided
