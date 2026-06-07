@@ -38,13 +38,33 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall,
     const currentGreeting = greetingsList[greetingIndex];
 
     const center = (student["Preferred Exam Center"] || student["final_exam_center"] || "").trim();
+    
+    // 1. Resolve Paper Placeholder
     const centerPapers = whatsappConfig.centerPapers || {};
     let paper = '';
-    const exactMatch = Object.keys(centerPapers).find(key => key.toLowerCase() === center.toLowerCase());
-    if (exactMatch) {
-      paper = centerPapers[exactMatch];
+    const exactPaperMatch = Object.keys(centerPapers).find(key => key.toLowerCase() === center.toLowerCase());
+    if (exactPaperMatch) {
+      paper = centerPapers[exactPaperMatch];
     } else {
-      paper = centerPapers['default'] || 'Biology සහ Combined Mathematics';
+      const partialPaperMatch = Object.keys(centerPapers).find(key => 
+        key.toLowerCase() !== 'default' && 
+        (center.toLowerCase().includes(key.toLowerCase()) || key.toLowerCase().includes(center.toLowerCase()))
+      );
+      paper = partialPaperMatch ? centerPapers[partialPaperMatch] : (centerPapers['default'] || 'Biology සහ Combined Mathematics');
+    }
+
+    // 2. Resolve Day Placeholder
+    const centerDays = whatsappConfig.centerDays || {};
+    let day = '';
+    const exactDayMatch = Object.keys(centerDays).find(key => key.toLowerCase() === center.toLowerCase());
+    if (exactDayMatch) {
+      day = centerDays[exactDayMatch];
+    } else {
+      const partialDayMatch = Object.keys(centerDays).find(key => 
+        key.toLowerCase() !== 'default' && 
+        (center.toLowerCase().includes(key.toLowerCase()) || key.toLowerCase().includes(center.toLowerCase()))
+      );
+      day = partialDayMatch ? centerDays[partialDayMatch] : (centerDays['default'] || 'හෙට');
     }
 
     const template = whatsappConfig.template || '';
@@ -53,7 +73,8 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall,
       .replace(/{firstName}/g, student["First Name"] || "")
       .replace(/{lastName}/g, student["Last Name"] || "")
       .replace(/{examCenter}/g, center)
-      .replace(/{paper}/g, paper);
+      .replace(/{paper}/g, paper)
+      .replace(/{day}/g, day);
 
     const cleanedNum = cleanNumberForWhatsApp(waNumber);
     return `https://wa.me/${cleanedNum}?text=${encodeURIComponent(formattedText)}`;
