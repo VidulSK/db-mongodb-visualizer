@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { FaPhoneAlt, FaWhatsapp, FaCheck, FaSearch, FaFilter, FaRedo, FaTimes, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 
-export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall }) {
+export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall, adminId, whatsappConfig = { template: '', greetings: [] } }) {
   // Filter & Sort States
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStream, setSelectedStream] = useState('');
@@ -12,6 +12,41 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall 
   // Confirmation Modal State
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+  // WhatsApp click session counter
+  const [clickSessionCounter, setClickSessionCounter] = useState(() => {
+    const key = `whatsapp_count_${adminId || 'default'}`;
+    return parseInt(localStorage.getItem(key) || '0', 10);
+  });
+
+  const incrementClickCount = () => {
+    const key = `whatsapp_count_${adminId || 'default'}`;
+    const nextVal = clickSessionCounter + 1;
+    localStorage.setItem(key, nextVal.toString());
+    setClickSessionCounter(nextVal);
+  };
+
+  const getWhatsAppLink = (student) => {
+    const waNumber = (student["WhatsApp Number"] || student["Whatsapp Number"] || "").trim();
+    if (!waNumber) return '';
+
+    const greetingsList = whatsappConfig.greetings && whatsappConfig.greetings.length > 0
+      ? whatsappConfig.greetings
+      : ['Hi', 'Hello'];
+
+    const greetingIndex = Math.floor(clickSessionCounter / 10) % greetingsList.length;
+    const currentGreeting = greetingsList[greetingIndex];
+
+    const template = whatsappConfig.template || '';
+    const formattedText = template
+      .replace(/{greeting}/g, currentGreeting)
+      .replace(/{firstName}/g, student["First Name"] || "")
+      .replace(/{lastName}/g, student["Last Name"] || "")
+      .replace(/{examCenter}/g, student["Preferred Exam Center"] || student["final_exam_center"] || "");
+
+    const cleanedNum = cleanNumberForWhatsApp(waNumber);
+    return `https://wa.me/${cleanedNum}?text=${encodeURIComponent(formattedText)}`;
+  };
 
   // 1. Dynamically compute unique filter options from database fields
   const filterOptions = useMemo(() => {
@@ -223,11 +258,12 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall 
                     <span>WhatsApp:</span>
                     {waNumber ? (
                       <a 
-                        href={`https://wa.me/${cleanNumberForWhatsApp(waNumber)}`}
+                        href={getWhatsAppLink(student)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="wa-link"
                         title="Open chat on WhatsApp"
+                        onClick={incrementClickCount}
                       >
                         <FaWhatsapp /> {waNumber}
                       </a>

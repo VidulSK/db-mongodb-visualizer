@@ -20,6 +20,7 @@ export default function App() {
   const [callLogs, setCallLogs] = useState({});
   const [isConnected, setIsConnected] = useState(false);
   const [socketInstance, setSocketInstance] = useState(null);
+  const [whatsappConfig, setWhatsappConfig] = useState({ template: '', greetings: [] });
 
   // 1. Fetch initial registrations and call logs
   const fetchData = async () => {
@@ -40,6 +41,12 @@ export default function App() {
           logMap[log.whatsappNumber] = log;
         });
         setCallLogs(logMap);
+      }
+
+      const configRes = await fetch(`${BACKEND_URL}/api/whatsapp-config`);
+      const configData = await configRes.json();
+      if (configData && configData.template) {
+        setWhatsappConfig(configData);
       }
     } catch (error) {
       console.error('Error fetching initial database records:', error);
@@ -213,6 +220,8 @@ export default function App() {
             students={students}
             callLogs={callLogs}
             onConfirmCall={handleConfirmCall}
+            adminId={adminId}
+            whatsappConfig={whatsappConfig}
           />
         )}
       </main>
