@@ -8,11 +8,16 @@ const StudentSchema = new Schema({
   "Whatsapp Number": { type: String },
   "Subject Stream": { type: String, required: true },
   "Medium": { type: String, required: true },
-  "Preferred Exam Center": { type: String, required: true },
-  "exam_center_confirmed26": { type: Boolean, default: false } // Boolean type matching the database
+  "final_exam_center": { type: String, required: true },
+  "exam_center_confirmed26": { type: Schema.Types.Mixed, default: false }, // Mixed to support both Boolean and String (" true", "true")
+  "NIC": { type: String },
+  "attended_days": { type: [String], default: [] }
 }, { timestamps: true });
 
 // Explicitly compile the model on the collection 'sme26registrations'
 const Student = primaryConnection.model('Student', StudentSchema, 'sme26registrations');
 
-export default Student;
+// Explicitly compile the model on the collection 'sme25registrations'
+const StudentSme25 = primaryConnection.model('StudentSme25', StudentSchema, 'sme25registrations');
+
+export { Student as default, StudentSme25 };

@@ -975,4 +975,48 @@ select.input-control {
   to { transform: scale(1); opacity: 1; }
 }
 
+/* --- ATTENDANCE PAGE SPECIFIC STYLES --- */
+.date-pill {
+  padding: 0.45rem 1.15rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--bg-badge);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  transition: var(--transition-smooth);
+}
+
+.date-pill:hover {
+  background: var(--bg-tab-hover);
+  color: var(--text-primary);
+  border-color: var(--border-color-hover);
+}
+
+.date-pill.active {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);
+}
+
+.attendance-center-item:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-color-hover) !important;
+  box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.08) !important;
+}
+
+.attendance-center-header:hover {
+  background: rgba(15, 23, 42, 0.04) !important;
+}
+
+.breakdown-col {
+  background: rgba(15, 23, 42, 0.01);
+  padding: 1.25rem;
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.03);
+}
+
+
 

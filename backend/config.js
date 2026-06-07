@@ -18,5 +18,5 @@ primaryConnection.on('error', (err) => console.error('Mongoose Primary Connectio
 secondaryConnection.on('connected', () => console.log('Mongoose connected to Secondary Database'));
 secondaryConnection.on('error', (err) => console.error('Mongoose Secondary Connection error:', err));
 
-export const ADMIN_IDS = process.env.ADMIN_IDS ? process.env.ADMIN_IDS.split(',').map(id => id.trim()) : ['verosha@123', 'chethana@123', 'hansani@123', 'vidul@123', 'seniru@123', 'senuka@123', 'amiru@123', 'sanithu@123'];
+export const ADMIN_IDS = process.env.ADMIN_IDS ? process.env.ADMIN_IDS.split(',').map(id => id.trim()) : ["verosha@123", "chethana@123", "hansani@123", "vidul@123", "seniru@123", "senuka@123", "amiru@123", "sanithu@123", "admin@malabe", "admin@colpetty", "admin@ampara", "admin@kandy", "admin@kalutara", "admin@matara", "admin@ratnapura", "admin2@malabe", "admin2@colpetty", "admin2@ampara", "admin2@kandy", "admin2@kalutara", "admin2@matara", "admin2@ratnapura"];
 export { primaryConnection, secondaryConnection };
