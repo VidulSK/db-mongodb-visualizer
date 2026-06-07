@@ -50,7 +50,7 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall,
         key.toLowerCase() !== 'default' && 
         (center.toLowerCase().includes(key.toLowerCase()) || key.toLowerCase().includes(center.toLowerCase()))
       );
-      paper = partialPaperMatch ? centerPapers[partialPaperMatch] : (centerPapers['default'] || 'Biology සහ Combined Mathematics');
+      paper = partialPaperMatch ? centerPapers[partialPaperMatch] : (centerPapers['default'] || '');
     }
 
     // 2. Resolve Day Placeholder
