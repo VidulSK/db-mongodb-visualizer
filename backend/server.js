@@ -128,17 +128,13 @@ app.get('/api/calls', async (req, res) => {
 });
 
 app.get('/api/whatsapp-config', (req, res) => {
-  const defaultTemplate = `{greeting} {firstName}, අපි සස්නක සංසදයෙන්. ඔයා අපේ mock exam එකට register වෙලා ඉන්නවානේ.\n\nකොළඹ, නුවර, කුරුණෑගල, මාතර, කළුතර centers වල හෙට තියෙන්නේ {paper}. මේ exam එක සම්පූ+ර්+ණ+යෙන්ම නොමිලේ කරන්නේ. ඔයා අද එකට ආවත් නැතත් subject wise z score එකක් ලැබෙන නිසා ඔයාලාට ඒක වටීවි\n\nඔයා හෙට එයි කියලා අපි බලාපොරොත්තු වෙනවා.\n🌞💛`;
+  const defaultTemplate = `{greeting} {firstName}, අපි සස්නක සංසදයෙන්. ඔයා අපේ mock exam එකට register වෙලා ඉන්නවානේ.\n\nකොළඹ, නුවර, කුරුණෑගල, මාතර, කළුතර centers වල {day} තියෙන්නේ {paper}. මේ exam එක සම්පූ+ර්+ණ+යෙන්ම නොමිලේ කරන්නේ. ඔයා අද එකට ආවත් නැතත් subject wise z score එකක් ලැබෙන නිසා ඔයාලාට ඒක වටීවි\n\nඔයා {day} එයි කියලා අපි බලාපොරොත්තු වෙනවා.\n🌞💛`;
   const defaultGreetings = 'Hi,Hello';
-  const defaultCenterPapers = {
-    "default": "Biology සහ Combined Mathematics"
-  };
-
   const template = process.env.WHATSAPP_MESSAGE_TEMPLATE || defaultTemplate;
   const greetingsStr = process.env.WHATSAPP_GREETINGS || defaultGreetings;
   const greetings = greetingsStr.split(',').map(g => g.trim()).filter(Boolean);
 
-  let centerPapers = defaultCenterPapers;
+  let centerPapers = {};
   if (process.env.WHATSAPP_CENTER_PAPERS) {
     try {
       centerPapers = JSON.parse(process.env.WHATSAPP_CENTER_PAPERS);
@@ -147,7 +143,21 @@ app.get('/api/whatsapp-config', (req, res) => {
     }
   }
 
-  res.json({ template, greetings, centerPapers });
+  const defaultCenterDays = {
+    "default": "හෙට",
+    "Ratnapura": "12 වැනිදා"
+  };
+
+  let centerDays = defaultCenterDays;
+  if (process.env.WHATSAPP_CENTER_DAYS) {
+    try {
+      centerDays = JSON.parse(process.env.WHATSAPP_CENTER_DAYS);
+    } catch (e) {
+      console.error("Error parsing WHATSAPP_CENTER_DAYS env var:", e.message);
+    }
+  }
+
+  res.json({ template, greetings, centerPapers, centerDays });
 });
 
 app.post('/api/calls', async (req, res) => {
