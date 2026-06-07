@@ -92,11 +92,12 @@ app.post('/api/login', (req, res) => {
   if (existingSocketId) {
     const activeSocket = io.sockets.sockets.get(existingSocketId);
     if (activeSocket && activeSocket.connected) {
-      return res.status(403).json({ error: 'This Admin ID is currently active in another session.' });
-    } else {
-      // Clean up stale session
-      activeAdminSessions.delete(normalizedId);
+      // Evict existing session
+      activeSocket.emit('session:error', { error: 'Admin ID is already active elsewhere.' });
+      activeSocket.disconnect();
     }
+    // Clean up session in mapping to allow new session to register
+    activeAdminSessions.delete(normalizedId);
   }
 
   res.json({ success: true, adminId: normalizedId });
@@ -200,10 +201,9 @@ io.on('connection', (socket) => {
     if (previousSocketId && previousSocketId !== socket.id) {
       const activeSocket = io.sockets.sockets.get(previousSocketId);
       if (activeSocket && activeSocket.connected) {
-        // If there's an active session on another socket, disconnect the new socket
-        socket.emit('session:error', { error: 'Admin ID is already active elsewhere.' });
-        socket.disconnect();
-        return;
+        // Evict existing session
+        activeSocket.emit('session:error', { error: 'Admin ID is already active elsewhere.' });
+        activeSocket.disconnect();
       }
     }
 
