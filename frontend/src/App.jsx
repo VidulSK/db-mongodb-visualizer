@@ -55,6 +55,8 @@ export default function App() {
   };
 
   useEffect(() => {
+    let isCurrent = true;
+
     if (!adminId) {
       if (socketInstance) {
         socketInstance.disconnect();
@@ -74,6 +76,7 @@ export default function App() {
     setSocketInstance(socket);
 
     socket.on('connect', () => {
+      if (!isCurrent) return;
       console.log('Connected to real-time server');
       setIsConnected(true);
       
@@ -82,12 +85,14 @@ export default function App() {
     });
 
     socket.on('disconnect', () => {
+      if (!isCurrent) return;
       console.log('Disconnected from real-time server');
       setIsConnected(false);
     });
 
     // Listen for WebSocket concurrency error (e.g. seat taken)
     socket.on('session:error', (data) => {
+      if (!isCurrent) return;
       console.error('Session error:', data.error);
       setLoginError(data.error || 'Session terminated due to another login.');
       handleLogout();
@@ -95,6 +100,7 @@ export default function App() {
 
     // Receive student registration updates (e.g. from change stream or polling backend)
     socket.on('students:update', (updatedStudents) => {
+      if (!isCurrent) return;
       console.log('Received real-time student updates:', updatedStudents.length);
       if (Array.isArray(updatedStudents)) {
         setStudents(updatedStudents);
@@ -103,6 +109,7 @@ export default function App() {
 
     // Receive call logged confirmations in real-time
     socket.on('call:confirmed', (newCallLog) => {
+      if (!isCurrent) return;
       console.log('Real-time call confirmation received for:', newCallLog.whatsappNumber);
       setCallLogs(prevLogs => ({
         ...prevLogs,
@@ -111,6 +118,7 @@ export default function App() {
     });
 
     return () => {
+      isCurrent = false;
       socket.disconnect();
     };
   }, [adminId]);
