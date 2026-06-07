@@ -94,7 +94,12 @@ app.post('/api/login', (req, res) => {
     if (activeSocket && activeSocket.connected) {
       // Evict existing session
       activeSocket.emit('session:error', { error: 'Admin ID is already active elsewhere.' });
-      activeSocket.disconnect();
+      // Delay disconnect to ensure client receives the error packet before connection is severed
+      setTimeout(() => {
+        if (activeSocket.connected) {
+          activeSocket.disconnect();
+        }
+      }, 1000);
     }
     // Clean up session in mapping to allow new session to register
     activeAdminSessions.delete(normalizedId);
@@ -203,7 +208,12 @@ io.on('connection', (socket) => {
       if (activeSocket && activeSocket.connected) {
         // Evict existing session
         activeSocket.emit('session:error', { error: 'Admin ID is already active elsewhere.' });
-        activeSocket.disconnect();
+        // Delay disconnect to ensure client receives the error packet before connection is severed
+        setTimeout(() => {
+          if (activeSocket.connected) {
+            activeSocket.disconnect();
+          }
+        }, 1000);
       }
     }
 
