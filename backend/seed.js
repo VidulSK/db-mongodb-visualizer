@@ -1,24 +1,25 @@
 import mongoose from 'mongoose';
-import Student from './models/Student.js';
+import Student, { StudentSme25 } from './models/Student.js';
 import CallLog from './models/CallLog.js';
 import { primaryConnection, secondaryConnection } from './config.js';
 
 const mockStudents = [
-  { firstName: "Avantha", lastName: "Perera", whatsappNumber: "+94711234567", subjectStream: "Physical Science", medium: "Sinhala", preferredExamCenter: "Colombo Center A", exam_center_confirmed26: "true" },
-  { firstName: "Dilshan", lastName: "Silva", whatsappNumber: "+94771234568", subjectStream: "Physical Science", medium: "English", preferredExamCenter: "Colombo Center A", exam_center_confirmed26: "false" },
-  { firstName: "Fathima", lastName: "Asma", whatsappNumber: "+94721234569", subjectStream: "Biological Science", medium: "Tamil", preferredExamCenter: "Jaffna Center D", exam_center_confirmed26: "true" },
-  { firstName: "Tharindu", lastName: "Bandara", whatsappNumber: "+94751234570", subjectStream: "Biological Science", medium: "Sinhala", preferredExamCenter: "Kandy Center C", exam_center_confirmed26: "false" },
-  { firstName: "Sanduni", lastName: "Fernando", whatsappNumber: "+94761234571", subjectStream: "Commerce", medium: "English", preferredExamCenter: "Colombo Center A", exam_center_confirmed26: "true" },
-  { firstName: "Kavindu", lastName: "Jayawardena", whatsappNumber: "+94701234572", subjectStream: "Physical Science", medium: "Sinhala", preferredExamCenter: "Galle Center B", exam_center_confirmed26: "true" },
-  { firstName: "Nisal", lastName: "Gunasekara", whatsappNumber: "+94712345673", subjectStream: "Arts", medium: "Sinhala", preferredExamCenter: "Galle Center B", exam_center_confirmed26: "false" },
-  { firstName: "Priya", lastName: "Ramanathan", whatsappNumber: "+94773456789", subjectStream: "Commerce", medium: "Tamil", preferredExamCenter: "Jaffna Center D", exam_center_confirmed26: "false" },
-  { firstName: "Minura", lastName: "Senanayake", whatsappNumber: "+94715566778", subjectStream: "Arts", medium: "English", preferredExamCenter: "Kandy Center C", exam_center_confirmed26: "true" },
-  { firstName: "Ruvini", lastName: "Edirisinghe", whatsappNumber: "+94769988776", subjectStream: "Biological Science", medium: "Sinhala", preferredExamCenter: "Colombo Center A", exam_center_confirmed26: "false" },
-  { firstName: "Karthik", lastName: "Subramaniam", whatsappNumber: "+94778899001", subjectStream: "Physical Science", medium: "Tamil", preferredExamCenter: "Jaffna Center D", exam_center_confirmed26: "true" },
-  { firstName: "Hansani", lastName: "Dissanayake", whatsappNumber: "+94726677889", subjectStream: "Commerce", medium: "Sinhala", preferredExamCenter: "Kandy Center C", exam_center_confirmed26: "true" },
-  { firstName: "Chamila", lastName: "Ranasinghe", whatsappNumber: "+94759900112", subjectStream: "Arts", medium: "Sinhala", preferredExamCenter: "Galle Center B", exam_center_confirmed26: "true" },
-  { firstName: "Michelle", lastName: "De Alwis", whatsappNumber: "+94701122334", subjectStream: "Biological Science", medium: "English", preferredExamCenter: "Colombo Center A", exam_center_confirmed26: "false" },
-  { firstName: "Abdul", lastName: "Hameed", whatsappNumber: "+94776655443", subjectStream: "Commerce", medium: "Tamil", preferredExamCenter: "Colombo Center A", exam_center_confirmed26: "true" }
+  { "First Name": "Avantha", "Last Name": "Perera", "Whatsapp Number": "+94711234567", "Subject Stream": "Physical Science", "Medium": "Sinhala", "final_exam_center": "Colombo Center A", "exam_center_confirmed26": true, "NIC": "200500100200", "attended_days": ["2026-06-01", "2026-06-02"] },
+  { "First Name": "Dilshan", "Last Name": "Silva", "Whatsapp Number": "+94771234568", "Subject Stream": "Physical Science", "Medium": "English", "final_exam_center": "Colombo Center A", "exam_center_confirmed26": false, "NIC": "200500100201", "attended_days": ["2026-06-01"] },
+  { "First Name": "Fathima", "Last Name": "Asma", "Whatsapp Number": "+94721234569", "Subject Stream": "Biological Science", "Medium": "Tamil", "final_exam_center": "Jaffna Center D", "exam_center_confirmed26": true, "NIC": "200500100202", "attended_days": ["2026-06-02", "2026-06-03"] },
+  { "First Name": "Tharindu", "Last Name": "Bandara", "Whatsapp Number": "+94751234570", "Subject Stream": "Biological Science", "Medium": "Sinhala", "final_exam_center": "Kandy Center C", "exam_center_confirmed26": false, "NIC": "200500100203", "attended_days": [] },
+  { "First Name": "Sanduni", "Last Name": "Fernando", "Whatsapp Number": "+94761234571", "Subject Stream": "Commerce", "Medium": "English", "final_exam_center": "Colombo Center A", "exam_center_confirmed26": true, "NIC": "200500100204", "attended_days": ["2026-06-01", "2026-06-03"] },
+  { "First Name": "Kavindu", "Last Name": "Jayawardena", "Whatsapp Number": "+94701234572", "Subject Stream": "Physical Science", "Medium": "Sinhala", "final_exam_center": "Galle Center B", "exam_center_confirmed26": true, "NIC": "200500100205", "attended_days": ["2026-06-01", "2026-06-02", "2026-06-03"] },
+  { "First Name": "Nisal", "Last Name": "Gunasekara", "Whatsapp Number": "+94701234573", "Subject Stream": "Arts", "Medium": "Sinhala", "final_exam_center": "Galle Center B", "exam_center_confirmed26": false, "NIC": "200500100206", "attended_days": [] },
+  { "First Name": "Priya", "Last Name": "Ramanathan", "Whatsapp Number": "+94773456789", "Subject Stream": "Commerce", "Medium": "Tamil", "final_exam_center": "Jaffna Center D", "exam_center_confirmed26": false, "NIC": "200500100207", "attended_days": ["2026-06-02"] },
+  { "First Name": "Minura", "Last Name": "Senanayake", "Whatsapp Number": "+94715566778", "Subject Stream": "Arts", "Medium": "English", "final_exam_center": "Kandy Center C", "exam_center_confirmed26": true, "NIC": "200500100208", "attended_days": ["2026-06-01", "2026-06-02"] },
+  { "First Name": "Ruvini", "Last Name": "Edirisinghe", "Whatsapp Number": "+94769988776", "Subject Stream": "Biological Science", "Medium": "Sinhala", "final_exam_center": "Colombo Center A", "exam_center_confirmed26": false, "NIC": "200500100209", "attended_days": [] }
+];
+
+const mockStudents25 = [
+  { "First Name": "Kasun", "Last Name": "Bandara", "Whatsapp Number": "+94770001111", "Subject Stream": "Physical Science", "Medium": "Sinhala", "final_exam_center": "Colombo Center A", "exam_center_confirmed26": " true", "NIC": "200400100200", "attended_days": ["2026-06-01"] },
+  { "First Name": "Nimal", "Last Name": "Siriwardena", "Whatsapp Number": "+94770002222", "Subject Stream": "Physical Science", "Medium": "Sinhala", "final_exam_center": "Kandy Center C", "exam_center_confirmed26": "false", "NIC": "200400100201", "attended_days": ["2026-06-02"] },
+  { "First Name": "Ruwan", "Last Name": "Kumara", "Whatsapp Number": "+94770003333", "Subject Stream": "Biological Science", "Medium": "English", "final_exam_center": "Galle Center B", "exam_center_confirmed26": true, "NIC": "200400100202", "attended_days": ["2026-06-01", "2026-06-03"] }
 ];
 
 async function seed() {
@@ -39,17 +40,25 @@ async function seed() {
 
     console.log("Databases ready for seeding...");
 
-    // Clear primary
+    // Clear primary sme26registrations
     await Student.deleteMany({});
-    console.log("Cleared Primary Database Students.");
+    console.log("Cleared Primary Database sme26registrations.");
+
+    // Clear primary sme25registrations
+    await StudentSme25.deleteMany({});
+    console.log("Cleared Primary Database sme25registrations.");
 
     // Clear secondary
     await CallLog.deleteMany({});
     console.log("Cleared Secondary Database CallLogs.");
 
-    // Insert primary
+    // Insert primary sme26registrations
     await Student.insertMany(mockStudents);
-    console.log(`Successfully seeded Primary Database with ${mockStudents.length} students.`);
+    console.log(`Successfully seeded sme26registrations with ${mockStudents.length} students.`);
+
+    // Insert primary sme25registrations
+    await StudentSme25.insertMany(mockStudents25);
+    console.log(`Successfully seeded sme25registrations with ${mockStudents25.length} students.`);
 
     // Insert one initial call log for testing
     await CallLog.create({ whatsappNumber: "+94711234567", callTaken: true });

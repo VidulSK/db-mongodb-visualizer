@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { FaPhoneAlt, FaWhatsapp, FaCheck, FaSearch, FaFilter, FaRedo, FaTimes, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 
 export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall, adminId, whatsappConfig = { template: '', greetings: [] } }) {
@@ -56,7 +56,7 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall,
 
     students.forEach(student => {
       if (student["Subject Stream"]) streams.add(student["Subject Stream"]);
-      if (student["Preferred Exam Center"]) centers.add(student["Preferred Exam Center"]);
+      if (student["final_exam_center"]) centers.add(student["final_exam_center"]);
       if (student["Medium"]) mediums.add(student["Medium"]);
     });
 
@@ -82,13 +82,13 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall,
       // Text Search: matches first name, last name, or WhatsApp number
       const fullName = `${student["First Name"] || ''} ${student["Last Name"] || ''}`.toLowerCase();
       const num = (student["WhatsApp Number"] || student["Whatsapp Number"] || '').toLowerCase();
-      const matchesSearch = searchTerm === '' || 
-        fullName.includes(searchTerm.toLowerCase()) || 
+      const matchesSearch = searchTerm === '' ||
+        fullName.includes(searchTerm.toLowerCase()) ||
         num.includes(searchTerm.toLowerCase());
 
       // Dropdown filters
       const matchesStream = selectedStream === '' || student["Subject Stream"] === selectedStream;
-      const matchesCenter = selectedCenter === '' || student["Preferred Exam Center"] === selectedCenter;
+      const matchesCenter = selectedCenter === '' || student["final_exam_center"] === selectedCenter;
       const matchesMedium = selectedMedium === '' || student["Medium"] === selectedMedium;
 
       return matchesSearch && matchesStream && matchesCenter && matchesMedium;
@@ -109,9 +109,20 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall,
     });
   }, [students, callLogs, searchTerm, selectedStream, selectedCenter, selectedMedium, sortBy]);
 
-  // Clean WhatsApp number for link (remove plus, spaces)
+  // Clean WhatsApp number for link (ensure 94 prefix, remove leading 0, ensure 9 mobile digits)
   const cleanNumberForWhatsApp = (num) => {
-    return num ? num.replace(/[^\d]/g, '') : '';
+    if (!num) return '';
+    let cleaned = num.replace(/\D/g, '');
+    if (cleaned.startsWith('94') && cleaned.length === 11) {
+      return cleaned;
+    }
+    if (cleaned.startsWith('0')) {
+      cleaned = cleaned.substring(1);
+    }
+    if (cleaned.length === 9) {
+      return '94' + cleaned;
+    }
+    return cleaned.startsWith('94') ? cleaned : '94' + cleaned;
   };
 
   return (
@@ -204,9 +215,9 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall,
           Showing <strong>{filteredStudents.length}</strong> of <strong>{students.length}</strong> students
         </div>
         {(searchTerm || selectedStream || selectedCenter || selectedMedium) && (
-          <button 
-            onClick={resetFilters} 
-            className="tab-btn" 
+          <button
+            onClick={resetFilters}
+            className="tab-btn"
             style={{ padding: '0.4rem 1rem', fontSize: '0.8rem', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)' }}
           >
             <FaRedo size={10} /> Reset Filters
@@ -227,15 +238,18 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall,
             const waNumber = (student["WhatsApp Number"] || student["Whatsapp Number"] || "").trim();
             const callLog = waNumber ? callLogs[waNumber] : null;
             const hasBeenCalled = waNumber ? !!callLog : false;
-            const isConfirmedCenter = student.exam_center_confirmed26 === true;
+            const isConfirmedCenter = student.exam_center_confirmed26 === true ||
+              student.exam_center_confirmed26 === 'true' ||
+              student.exam_center_confirmed26 === ' true' ||
+              (typeof student.exam_center_confirmed26 === 'string' && student.exam_center_confirmed26.trim() === 'true');
             const participationConfirmed = callLog?.participationConfirmed;
 
             // Use a unique key based on document ID to prevent duplicate key collisions
             const elementKey = student._id || waNumber || `${student["First Name"]}-${student["Last Name"]}-${Math.random()}`;
 
             return (
-              <div 
-                key={elementKey} 
+              <div
+                key={elementKey}
                 className={`queue-card ${hasBeenCalled ? 'called' : ''}`}
               >
                 <div className="queue-card-top">
@@ -249,13 +263,13 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall,
                   </div>
 
                   <div className="details-list">
-                    <span className="detail-badge stream">{student["Subject Stream"]}</span>
-                    <span className="detail-badge center">{student["Preferred Exam Center"]}</span>
-                    <span className="detail-badge medium">{student["Medium"]}</span>
+                    {student["Subject Stream"] && <span className="detail-badge stream">{student["Subject Stream"]}</span>}
+                    {student["final_exam_center"] && <span className="detail-badge center">{student["final_exam_center"]}</span>}
+                    {student["Medium"] && <span className="detail-badge medium">{student["Medium"]}</span>}
                   </div>
 
-                  <div className="wa-container">
-                    <span>WhatsApp:</span>
+                  <div className="wa-container" style={{ position: 'relative' }}>
+                    <span>Phone:</span>
                     {waNumber ? (
                       <a 
                         href={getWhatsAppLink(student)}
@@ -304,7 +318,7 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall,
                       <FaCheck /> Call Logged
                     </button>
                   ) : (
-                    <button 
+                    <button
                       className="btn-confirm-call pending"
                       onClick={() => {
                         setSelectedStudent(student);
@@ -341,7 +355,7 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall,
                 </div>
               </div>
               <div className="modal-actions">
-                <button 
+                <button
                   className="modal-btn yes"
                   onClick={() => {
                     onConfirmCall(selectedStudentWANumber, true);
@@ -351,7 +365,7 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall,
                 >
                   <FaCheck /> Yes, Confirmed
                 </button>
-                <button 
+                <button
                   className="modal-btn no"
                   onClick={() => {
                     onConfirmCall(selectedStudentWANumber, false);
@@ -361,7 +375,7 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall,
                 >
                   <FaTimes /> No, Declined
                 </button>
-                <button 
+                <button
                   className="modal-btn cancel"
                   onClick={() => {
                     setShowConfirmModal(false);
