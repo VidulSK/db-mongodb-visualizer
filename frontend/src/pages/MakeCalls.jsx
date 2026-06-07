@@ -37,7 +37,7 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall,
     const greetingIndex = Math.floor(clickSessionCounter / 10) % greetingsList.length;
     const currentGreeting = greetingsList[greetingIndex];
 
-    const center = (student["Preferred Exam Center"] || student["final_exam_center"] || "").trim();
+    const center = (student["final_exam_center"] || student["Preferred Exam Center"] || "").trim();
     
     // 1. Resolve Paper Placeholder
     const centerPapers = whatsappConfig.centerPapers || {};
