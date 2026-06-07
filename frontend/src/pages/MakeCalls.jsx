@@ -37,12 +37,23 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall,
     const greetingIndex = Math.floor(clickSessionCounter / 10) % greetingsList.length;
     const currentGreeting = greetingsList[greetingIndex];
 
+    const center = (student["Preferred Exam Center"] || student["final_exam_center"] || "").trim();
+    const centerPapers = whatsappConfig.centerPapers || {};
+    let paper = '';
+    const exactMatch = Object.keys(centerPapers).find(key => key.toLowerCase() === center.toLowerCase());
+    if (exactMatch) {
+      paper = centerPapers[exactMatch];
+    } else {
+      paper = centerPapers['default'] || 'Biology සහ Combined Mathematics';
+    }
+
     const template = whatsappConfig.template || '';
     const formattedText = template
       .replace(/{greeting}/g, currentGreeting)
       .replace(/{firstName}/g, student["First Name"] || "")
       .replace(/{lastName}/g, student["Last Name"] || "")
-      .replace(/{examCenter}/g, student["Preferred Exam Center"] || student["final_exam_center"] || "");
+      .replace(/{examCenter}/g, center)
+      .replace(/{paper}/g, paper);
 
     const cleanedNum = cleanNumberForWhatsApp(waNumber);
     return `https://wa.me/${cleanedNum}?text=${encodeURIComponent(formattedText)}`;
