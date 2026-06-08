@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { FaPhoneAlt, FaWhatsapp, FaCheck, FaSearch, FaFilter, FaRedo, FaTimes, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 
 export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall, adminId, whatsappConfig = { template: '', greetings: [] } }) {
@@ -41,7 +41,7 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall,
     
     // 1. Resolve Paper Placeholder
     const centerPapers = whatsappConfig.centerPapers || {};
-    let paper = '';
+    let paper;
     const exactPaperMatch = Object.keys(centerPapers).find(key => key.toLowerCase() === center.toLowerCase());
     if (exactPaperMatch) {
       paper = centerPapers[exactPaperMatch];
@@ -55,7 +55,7 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall,
 
     // 2. Resolve Day Placeholder
     const centerDays = whatsappConfig.centerDays || {};
-    let day = '';
+    let day;
     const exactDayMatch = Object.keys(centerDays).find(key => key.toLowerCase() === center.toLowerCase());
     if (exactDayMatch) {
       day = centerDays[exactDayMatch];
@@ -266,7 +266,7 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall,
         </div>
       ) : (
         <div className="queue-grid">
-          {filteredStudents.map(student => {
+          {filteredStudents.map((student, index) => {
             const waNumber = (student["WhatsApp Number"] || student["Whatsapp Number"] || "").trim();
             const callLog = waNumber ? callLogs[waNumber] : null;
             const hasBeenCalled = waNumber ? !!callLog : false;
@@ -277,7 +277,7 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall,
             const participationConfirmed = callLog?.participationConfirmed;
 
             // Use a unique key based on document ID to prevent duplicate key collisions
-            const elementKey = student._id || waNumber || `${student["First Name"]}-${student["Last Name"]}-${Math.random()}`;
+            const elementKey = student._id || waNumber || `${student["First Name"]}-${student["Last Name"]}-${index}`;
 
             return (
               <div

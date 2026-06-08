@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { FaCalendarAlt, FaMapMarkerAlt, FaBook, FaLanguage, FaAngleDown, FaAngleUp, FaUsers, FaCheckCircle } from 'react-icons/fa';
 
 export default function Attendance({ students = [] }) {
@@ -45,14 +45,9 @@ export default function Attendance({ students = [] }) {
     const totalStudents = confirmedStudents.length;
     if (totalStudents === 0) return { total: 0, attended: 0, percentage: 0 };
 
-    let attendedCount = 0;
-    if (selectedDate === 'all') {
-      // Attended at least once
-      attendedCount = confirmedStudents.filter(s => Array.isArray(s.attended_days) && s.attended_days.length > 0).length;
-    } else {
-      // Attended on selectedDate
-      attendedCount = confirmedStudents.filter(s => Array.isArray(s.attended_days) && s.attended_days.includes(selectedDate)).length;
-    }
+    const attendedCount = selectedDate === 'all'
+      ? confirmedStudents.filter(s => Array.isArray(s.attended_days) && s.attended_days.length > 0).length
+      : confirmedStudents.filter(s => Array.isArray(s.attended_days) && s.attended_days.includes(selectedDate)).length;
 
     return {
       total: totalStudents,
@@ -83,12 +78,9 @@ export default function Attendance({ students = [] }) {
       const totalRegistered = centerObj.students.length;
 
       // Calculate how many attended under current filter
-      let presentCount = 0;
-      if (selectedDate === 'all') {
-        presentCount = centerObj.students.filter(s => Array.isArray(s.attended_days) && s.attended_days.length > 0).length;
-      } else {
-        presentCount = centerObj.students.filter(s => Array.isArray(s.attended_days) && s.attended_days.includes(selectedDate)).length;
-      }
+      const presentCount = selectedDate === 'all'
+        ? centerObj.students.filter(s => Array.isArray(s.attended_days) && s.attended_days.length > 0).length
+        : centerObj.students.filter(s => Array.isArray(s.attended_days) && s.attended_days.includes(selectedDate)).length;
 
       const percentage = totalRegistered > 0 ? Math.round((presentCount / totalRegistered) * 100) : 0;
 

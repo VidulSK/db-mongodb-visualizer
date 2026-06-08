@@ -1,4 +1,3 @@
-import React from 'react';
 import { FaUsers, FaCheckCircle, FaMapMarkerAlt, FaGlobe } from 'react-icons/fa';
 
 export default function Dashboard({ students = [] }) {

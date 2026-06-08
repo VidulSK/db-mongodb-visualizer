@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import { FaHome, FaPhoneAlt, FaDatabase, FaWifi, FaSignOutAlt, FaCalendarAlt } from 'react-icons/fa';
 import Dashboard from './pages/Dashboard';
@@ -20,51 +20,48 @@ export default function App() {
   const [students, setStudents] = useState([]);
   const [callLogs, setCallLogs] = useState({});
   const [isConnected, setIsConnected] = useState(false);
-  const [socketInstance, setSocketInstance] = useState(null);
+  const socketRef = useRef(null);
   const [whatsappConfig, setWhatsappConfig] = useState({ template: '', greetings: [] });
-
-  // 1. Fetch initial registrations and call logs
-  const fetchData = async () => {
-    if (!adminId) return;
-    try {
-      const studentRes = await fetch(`${BACKEND_URL}/api/students`);
-      const studentData = await studentRes.json();
-      if (Array.isArray(studentData)) {
-        setStudents(studentData);
-      }
-
-      const callRes = await fetch(`${BACKEND_URL}/api/calls`);
-      const callData = await callRes.json();
-      if (Array.isArray(callData)) {
-        // Convert to key-value map by whatsappNumber for O(1) lookups
-        const logMap = {};
-        callData.forEach(log => {
-          logMap[log.whatsappNumber] = log;
-        });
-        setCallLogs(logMap);
-      }
-
-      const configRes = await fetch(`${BACKEND_URL}/api/whatsapp-config`);
-      const configData = await configRes.json();
-      if (configData && configData.template) {
-        setWhatsappConfig(configData);
-      }
-    } catch (error) {
-      console.error('Error fetching initial database records:', error);
-    }
-  };
 
   useEffect(() => {
     let isCurrent = true;
 
     if (!adminId) {
-      if (socketInstance) {
-        socketInstance.disconnect();
-        setSocketInstance(null);
-      }
-      setIsConnected(false);
       return;
     }
+
+    // 1. Fetch initial registrations and call logs
+    const fetchData = async () => {
+      try {
+        const studentRes = await fetch(`${BACKEND_URL}/api/students`);
+        const studentData = await studentRes.json();
+        if (!isCurrent) return;
+        if (Array.isArray(studentData)) {
+          setStudents(studentData);
+        }
+
+        const callRes = await fetch(`${BACKEND_URL}/api/calls`);
+        const callData = await callRes.json();
+        if (!isCurrent) return;
+        if (Array.isArray(callData)) {
+          // Convert to key-value map by whatsappNumber for O(1) lookups
+          const logMap = {};
+          callData.forEach(log => {
+            logMap[log.whatsappNumber] = log;
+          });
+          setCallLogs(logMap);
+        }
+
+        const configRes = await fetch(`${BACKEND_URL}/api/whatsapp-config`);
+        const configData = await configRes.json();
+        if (!isCurrent) return;
+        if (configData && configData.template) {
+          setWhatsappConfig(configData);
+        }
+      } catch (error) {
+        console.error('Error fetching initial database records:', error);
+      }
+    };
 
     fetchData();
 
@@ -73,7 +70,7 @@ export default function App() {
       transports: ['websocket', 'polling']
     });
 
-    setSocketInstance(socket);
+    socketRef.current = socket;
 
     socket.on('connect', () => {
       if (!isCurrent) return;
@@ -129,19 +126,19 @@ export default function App() {
     setLoginError('');
   };
 
-  const handleLogout = () => {
+  function handleLogout() {
     localStorage.removeItem('adminId');
     setAdminId('');
-    if (socketInstance) {
-      socketInstance.disconnect();
-      setSocketInstance(null);
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+      socketRef.current = null;
     }
     setIsConnected(false);
-  };
+  }
 
   // 3. Confirm call handler
   const handleConfirmCall = (whatsappNumber, participationConfirmed) => {
-    if (!socketInstance) return;
+    if (!socketRef.current) return;
 
     // Optimistic UI update
     setCallLogs(prevLogs => ({
@@ -155,7 +152,7 @@ export default function App() {
     }));
 
     // Emit confirmation event to server
-    socketInstance.emit('call:confirm', { whatsappNumber, participationConfirmed });
+    socketRef.current.emit('call:confirm', { whatsappNumber, participationConfirmed });
   };
 
   // Render Login screen if not authenticated

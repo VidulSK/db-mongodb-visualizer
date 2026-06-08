@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { FaLock, FaSignInAlt, FaDatabase, FaExclamationTriangle } from 'react-icons/fa';
 
 export default function Login({ onLoginSuccess, errorMsg, setErrorMsg, BACKEND_URL }) {
