@@ -56,10 +56,9 @@ async function getStudentFields(whatsappNumber) {
     }
     if (student) {
       return {
-        firstName: student["First Name"],
-        lastName: student["Last Name"],
-        examCenter: student["final_exam_center"],
+        name: `${student["First Name"] || ""} ${student["Last Name"] || ""}`.trim(),
         nic: student["NIC"],
+        examCenter: student["final_exam_center"],
         studentId: student._id ? student._id.toString() : undefined
       };
     }
@@ -176,15 +175,26 @@ app.post('/api/calls', async (req, res) => {
     const log = await CallLog.findOneAndUpdate(
       { whatsappNumber },
       {
-        callTaken: true,
+        whatsappNumber,
+        participationConfirmed: participationConfirmed === true || participationConfirmed === 'true',
         calledAt: new Date(),
-        participationConfirmed,
         ...studentFields
       },
       { upsert: true, new: true }
     );
     io.emit('call:confirmed', log);
     res.json(log);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Endpoint to clear the secondary database (Call Logs)
+app.delete('/api/database/clear-secondary', async (req, res) => {
+  try {
+    await CallLog.deleteMany({});
+    io.emit('call:cleared');
+    res.json({ success: true, message: 'Secondary database (Call Logs) cleared successfully.' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -224,14 +234,15 @@ io.on('connection', (socket) => {
 
   socket.on('call:confirm', async (data) => {
     const { whatsappNumber, participationConfirmed } = data;
+    if (!whatsappNumber) return;
     try {
       const studentFields = await getStudentFields(whatsappNumber);
       const log = await CallLog.findOneAndUpdate(
         { whatsappNumber },
         {
-          callTaken: true,
+          whatsappNumber,
+          participationConfirmed: participationConfirmed === true || participationConfirmed === 'true',
           calledAt: new Date(),
-          participationConfirmed,
           ...studentFields
         },
         { upsert: true, new: true }

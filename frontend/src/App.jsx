@@ -114,6 +114,13 @@ export default function App() {
       }));
     });
 
+    // Receive call logs cleared event in real-time
+    socket.on('call:cleared', () => {
+      if (!isCurrent) return;
+      console.log('Real-time call logs cleared');
+      setCallLogs({});
+    });
+
     return () => {
       isCurrent = false;
       socket.disconnect();
@@ -153,6 +160,25 @@ export default function App() {
 
     // Emit confirmation event to server
     socketRef.current.emit('call:confirm', { whatsappNumber, participationConfirmed });
+  };
+
+  // Clear secondary database call logs helper
+  const handleClearDatabase = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/database/clear-secondary`, {
+        method: 'DELETE'
+      });
+      const data = await response.json();
+      if (data.success) {
+        setCallLogs({});
+        return { success: true, message: data.message };
+      } else {
+        return { success: false, error: data.error };
+      }
+    } catch (err) {
+      console.error('Error clearing secondary database:', err);
+      return { success: false, error: err.message };
+    }
   };
 
   // Render Login screen if not authenticated
@@ -226,7 +252,11 @@ export default function App() {
       {/* Main Pages Content */}
       <main>
         {activeTab === 'home' ? (
-          <Dashboard students={students} />
+          <Dashboard 
+            students={students} 
+            callLogs={callLogs} 
+            onClearDatabase={handleClearDatabase} 
+          />
         ) : activeTab === 'calls' ? (
           <MakeCalls
             students={students}

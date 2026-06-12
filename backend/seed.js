@@ -61,7 +61,7 @@ async function seed() {
     console.log(`Successfully seeded sme25registrations with ${mockStudents25.length} students.`);
 
     // Insert one initial call log for testing
-    await CallLog.create({ whatsappNumber: "+94711234567", callTaken: true });
+    await CallLog.create({ whatsappNumber: "+94711234567", name: "Avantha Perera", nic: "200500100200", participationConfirmed: true });
     console.log("Seeded initial Call Log for Avantha Perera (+94711234567).");
 
   } catch (error) {
