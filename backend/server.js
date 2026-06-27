@@ -163,8 +163,9 @@ app.get('/api/whatsapp-config', (req, res) => {
   }
 
   const flyerUrl = process.env.WHATSAPP_FLYER_URL || '';
+  const flyerPosition = process.env.WHATSAPP_FLYER_POSITION || 'end';
 
-  res.json({ template, greetings, centerPapers, centerDays, flyerUrl });
+  res.json({ template, greetings, centerPapers, centerDays, flyerUrl, flyerPosition });
 });
 
 app.post('/api/calls', async (req, res) => {
