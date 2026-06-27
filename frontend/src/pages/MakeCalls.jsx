@@ -68,13 +68,17 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall,
     }
 
     const template = whatsappConfig.template || '';
-    const formattedText = template
+    let formattedText = template
       .replace(/{greeting}/g, currentGreeting)
       .replace(/{firstName}/g, student["First Name"] || "")
       .replace(/{lastName}/g, student["Last Name"] || "")
       .replace(/{examCenter}/g, center)
       .replace(/{paper}/g, paper)
       .replace(/{day}/g, day);
+
+    if (whatsappConfig.flyerUrl) {
+      formattedText += `\n\n${whatsappConfig.flyerUrl}`;
+    }
 
     const cleanedNum = cleanNumberForWhatsApp(waNumber);
     return `https://wa.me/${cleanedNum}?text=${encodeURIComponent(formattedText)}`;

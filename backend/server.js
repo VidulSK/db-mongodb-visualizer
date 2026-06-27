@@ -162,7 +162,9 @@ app.get('/api/whatsapp-config', (req, res) => {
     }
   }
 
-  res.json({ template, greetings, centerPapers, centerDays });
+  const flyerUrl = process.env.WHATSAPP_FLYER_URL || '';
+
+  res.json({ template, greetings, centerPapers, centerDays, flyerUrl });
 });
 
 app.post('/api/calls', async (req, res) => {
