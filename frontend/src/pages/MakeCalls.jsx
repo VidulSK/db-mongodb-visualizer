@@ -67,8 +67,22 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall,
       day = partialDayMatch ? centerDays[partialDayMatch] : (centerDays['default'] || 'හෙට');
     }
 
+    const flyerUrl = whatsappConfig.flyerUrl || '';
+    const flyerPosition = whatsappConfig.flyerPosition || 'end';
+
     const template = whatsappConfig.template || '';
-    let formattedText = template
+    let formattedText = template;
+
+    // Check if the template explicitly contains the flyerUrl placeholder
+    const hasFlyerPlaceholder = formattedText.includes('{flyerUrl}') || formattedText.includes('{flyer url}');
+
+    if (hasFlyerPlaceholder) {
+      formattedText = formattedText
+        .replace(/{flyerUrl}/gi, flyerUrl)
+        .replace(/{flyer url}/gi, flyerUrl);
+    }
+
+    formattedText = formattedText
       .replace(/{greeting}/g, currentGreeting)
       .replace(/{firstName}/g, student["First Name"] || "")
       .replace(/{lastName}/g, student["Last Name"] || "")
@@ -76,8 +90,12 @@ export default function MakeCalls({ students = [], callLogs = {}, onConfirmCall,
       .replace(/{paper}/g, paper)
       .replace(/{day}/g, day);
 
-    if (whatsappConfig.flyerUrl) {
-      formattedText += `\n\n${whatsappConfig.flyerUrl}`;
+    if (flyerUrl && !hasFlyerPlaceholder) {
+      if (flyerPosition === 'start') {
+        formattedText = `${flyerUrl}\n\n${formattedText}`;
+      } else {
+        formattedText = `${formattedText}\n\n${flyerUrl}`;
+      }
     }
 
     const cleanedNum = cleanNumberForWhatsApp(waNumber);
