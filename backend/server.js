@@ -194,6 +194,13 @@ app.post('/api/calls', async (req, res) => {
 
 // Endpoint to clear the secondary database (Call Logs)
 app.delete('/api/database/clear-secondary', async (req, res) => {
+  const superAdminId = req.headers['x-super-admin-id'] || '';
+  const correctSuperAdminId = process.env.SUPER_ADMIN_ID || 'vidul@123';
+
+  if (superAdminId.trim().toLowerCase() !== correctSuperAdminId.trim().toLowerCase()) {
+    return res.status(403).json({ error: 'Unauthorized: Invalid Super Admin ID.' });
+  }
+
   try {
     await CallLog.deleteMany({});
     io.emit('call:cleared');

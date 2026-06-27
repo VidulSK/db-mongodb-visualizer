@@ -5,6 +5,7 @@ export default function Dashboard({ students = [], callLogs = {}, onClearDatabas
   const [showWipeModal, setShowWipeModal] = useState(false);
   const [isWiping, setIsWiping] = useState(false);
   const [wipeStatus, setWipeStatus] = useState('');
+  const [superAdminIdInput, setSuperAdminIdInput] = useState('');
 
   // 1. Total registrations
   const totalRegistrations = students.length;
@@ -47,14 +48,20 @@ export default function Dashboard({ students = [], callLogs = {}, onClearDatabas
   const totalNo = Object.values(callLogs).filter(c => c.participationConfirmed === false).length;
 
   const handleConfirmWipe = async () => {
+    if (!superAdminIdInput.trim()) {
+      setWipeStatus('Super Admin ID required');
+      setTimeout(() => setWipeStatus(''), 2000);
+      return;
+    }
     setIsWiping(true);
     setWipeStatus('Wiping call logs...');
     try {
-      const res = await onClearDatabase();
+      const res = await onClearDatabase(superAdminIdInput);
       if (res && res.success) {
         setWipeStatus('Successfully cleared!');
         setTimeout(() => {
           setShowWipeModal(false);
+          setSuperAdminIdInput('');
           setWipeStatus('');
           setIsWiping(false);
         }, 1000);
@@ -211,6 +218,21 @@ export default function Dashboard({ students = [], callLogs = {}, onClearDatabas
             </div>
             <div className="modal-body" style={{ margin: '1rem 0' }}>
               <p>Are you sure you want to permanently clear all call logs from the secondary database?</p>
+              <div className="form-group" style={{ marginTop: '1rem' }}>
+                <label htmlFor="super-admin-input" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.25rem' }}>
+                  Super Admin ID Verification:
+                </label>
+                <input
+                  id="super-admin-input"
+                  type="password"
+                  placeholder="Enter Super Admin ID"
+                  className="input-control"
+                  value={superAdminIdInput}
+                  onChange={(e) => setSuperAdminIdInput(e.target.value)}
+                  style={{ width: '100%' }}
+                  disabled={isWiping}
+                />
+              </div>
               <div className="modal-student-info" style={{ background: 'var(--danger-glow)', color: 'var(--danger)', borderColor: 'rgba(239, 68, 68, 0.15)', fontSize: '0.82rem', margin: '0.75rem 0 0 0' }}>
                 Warning: This action cannot be undone!
               </div>
@@ -226,7 +248,10 @@ export default function Dashboard({ students = [], callLogs = {}, onClearDatabas
               <button
                 className="modal-btn cancel"
                 disabled={isWiping}
-                onClick={() => setShowWipeModal(false)}
+                onClick={() => {
+                  setShowWipeModal(false);
+                  setSuperAdminIdInput('');
+                }}
               >
                 Cancel
               </button>

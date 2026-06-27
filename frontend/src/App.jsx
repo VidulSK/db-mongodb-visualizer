@@ -163,10 +163,13 @@ export default function App() {
   };
 
   // Clear secondary database call logs helper
-  const handleClearDatabase = async () => {
+  const handleClearDatabase = async (superAdminKey) => {
     try {
       const response = await fetch(`${BACKEND_URL}/api/database/clear-secondary`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: {
+          'x-super-admin-id': superAdminKey || ''
+        }
       });
       const data = await response.json();
       if (data.success) {
